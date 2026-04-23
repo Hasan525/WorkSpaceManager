@@ -77,22 +77,33 @@ fun ConflictDialog(
                 Spacer(Modifier.height(24.dp))
 
                 // Action buttons
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = { onResolve(ConflictResolution.KEEP_REMOTE) },
-                        modifier = Modifier.weight(1f)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text("Keep Remote")
+                        OutlinedButton(
+                            onClick = { onResolve(ConflictResolution.KEEP_REMOTE) },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Keep Remote")
+                        }
+                        Button(
+                            onClick = { onResolve(ConflictResolution.KEEP_LOCAL) },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Text("Keep Local")
+                        }
                     }
-                    Button(
-                        onClick = { onResolve(ConflictResolution.KEEP_LOCAL) },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    FilledTonalButton(
+                        onClick = { onResolve(ConflictResolution.MERGE) },
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Keep Local")
+                        Text("🔀 Merge Both Versions")
                     }
                 }
             }

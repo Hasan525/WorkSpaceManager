@@ -36,7 +36,10 @@ class WorkspaceRepositoryImpl @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
-        startFirestoreSync()
+        scope.launch {
+            try { firestoreDataSource.ensureAuth() } catch (_: Exception) {}
+            startFirestoreSync()
+        }
         observeConnectivity()
     }
 
@@ -138,6 +141,22 @@ class WorkspaceRepositoryImpl @Inject constructor(
                         isPendingSync = false
                     )
                 )
+            }
+            ConflictResolution.MERGE -> {
+                val merged = buildString {
+                    append(entity.content)
+                    append("\n\n--- Remote version ---\n\n")
+                    append(entity.remoteContent ?: "")
+                }
+                val now = System.currentTimeMillis()
+                val mergedEntity = entity.copy(
+                    content = merged,
+                    updatedAt = now,
+                    isConflicted = false,
+                    isPendingSync = true
+                )
+                noteDao.upsertNote(mergedEntity)
+                trySync { firestoreDataSource.saveNote(mergedEntity.toDomain().toDto()); noteDao.markSynced(noteId) }
             }
         }
     }
