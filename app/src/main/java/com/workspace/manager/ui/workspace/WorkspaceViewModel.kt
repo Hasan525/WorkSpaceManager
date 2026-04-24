@@ -11,6 +11,7 @@ import com.workspace.manager.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -53,10 +54,16 @@ class WorkspaceViewModel @Inject constructor(
             .launchIn(viewModelScope)
     }
 
-    fun createNote() {
+    /**
+     * Creates a new note and invokes [onCreated] with the new note's ID so the
+     * caller can navigate directly to the editor — removing the extra tap.
+     */
+    fun createNote(onCreated: (noteId: String) -> Unit = {}) {
         viewModelScope.launch {
-            val sortOrder = System.currentTimeMillis()
-            saveNote(title = "New Note", content = "", sortOrder = sortOrder)
+            val id = UUID.randomUUID().toString()
+            val now = System.currentTimeMillis()
+            saveNote(id = id, title = "", content = "", sortOrder = now)
+            onCreated(id)
         }
     }
 
@@ -114,11 +121,15 @@ class WorkspaceViewModel @Inject constructor(
 
     fun clearError() = _uiState.update { it.copy(error = null) }
 
+    /**
+     * Computes a sort order that places an item at [index] using midpoint
+     * arithmetic so no global renumbering is required.
+     */
     private fun computeSortOrderAt(items: List<WorkspaceItem>, index: Int): Long {
         return when {
             items.isEmpty() -> System.currentTimeMillis()
-            index <= 0 -> items.first().sortOrder - 1000
-            index >= items.size -> items.last().sortOrder + 1000
+            index <= 0 -> items.first().sortOrder - 1_000L
+            index >= items.size -> items.last().sortOrder + 1_000L
             else -> (items[index - 1].sortOrder + items[index].sortOrder) / 2
         }
     }

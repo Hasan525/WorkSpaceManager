@@ -26,6 +26,9 @@ interface AssetDao {
     @Query("UPDATE assets SET isPendingSync = 0 WHERE id = :id")
     suspend fun markSynced(id: String)
 
+    @Query("SELECT id FROM assets")
+    suspend fun getAllAssetIds(): List<String>
+
     @Query("DELETE FROM assets WHERE id = :id")
     suspend fun deleteAsset(id: String)
 

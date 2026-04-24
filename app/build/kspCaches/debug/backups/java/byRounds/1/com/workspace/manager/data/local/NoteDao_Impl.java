@@ -51,7 +51,7 @@ public final class NoteDao_Impl implements NoteDao {
       @Override
       @NonNull
       public String createQuery() {
-        final String _query = "UPDATE notes SET isPendingSync = 0, isConflicted = 0 WHERE id = ?";
+        final String _query = "UPDATE notes SET isPendingSync = 0, isConflicted = 0, remoteUpdatedAt = updatedAt WHERE id = ?";
         return _query;
       }
     };
@@ -518,6 +518,32 @@ public final class NoteDao_Impl implements NoteDao {
             _result = new NoteEntity(_tmpId,_tmpTitle,_tmpContent,_tmpSortOrder,_tmpCreatedAt,_tmpUpdatedAt,_tmpIsPendingSync,_tmpIsConflicted,_tmpRemoteContent,_tmpRemoteUpdatedAt);
           } else {
             _result = null;
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object getAllNoteIds(final Continuation<? super List<String>> $completion) {
+    final String _sql = "SELECT id FROM notes";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<String>>() {
+      @Override
+      @NonNull
+      public List<String> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final List<String> _result = new ArrayList<String>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final String _item;
+            _item = _cursor.getString(0);
+            _result.add(_item);
           }
           return _result;
         } finally {

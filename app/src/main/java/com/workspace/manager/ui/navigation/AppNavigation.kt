@@ -13,8 +13,16 @@ object Routes {
     const val WORKSPACE = "workspace"
     const val NOTE_EDITOR = "note_editor"
     const val ARG_NOTE_ID = "noteId"
-    fun noteEditor(id: String? = null) =
-        if (id == null) "$NOTE_EDITOR/new" else "$NOTE_EDITOR/$id"
+
+    /**
+     * Route for the note editor.  Uses an optional query-parameter so that
+     * "note_editor" (new note, noteId = null) and
+     * "note_editor?noteId=<id>" (existing note) share one composable and
+     * avoid the ambiguity that `note_editor/{noteId}` would have with the
+     * literal path segment "new".
+     */
+    fun noteEditor(id: String? = null): String =
+        if (id == null) NOTE_EDITOR else "$NOTE_EDITOR?$ARG_NOTE_ID=$id"
 }
 
 @Composable
@@ -33,18 +41,15 @@ fun AppNavigation() {
             )
         }
 
-        // New note
-        composable(route = "${Routes.NOTE_EDITOR}/new") {
-            NoteEditorScreen(
-                noteId = null,
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        // Edit existing note
         composable(
-            route = "${Routes.NOTE_EDITOR}/{${Routes.ARG_NOTE_ID}}",
-            arguments = listOf(navArgument(Routes.ARG_NOTE_ID) { type = NavType.StringType })
+            route = "${Routes.NOTE_EDITOR}?${Routes.ARG_NOTE_ID}={${Routes.ARG_NOTE_ID}}",
+            arguments = listOf(
+                navArgument(Routes.ARG_NOTE_ID) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
         ) { backStackEntry ->
             val noteId = backStackEntry.arguments?.getString(Routes.ARG_NOTE_ID)
             NoteEditorScreen(

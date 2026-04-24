@@ -26,11 +26,16 @@ interface NoteDao {
         notes.forEach { upsertNote(it) }
     }
 
-    @Query("UPDATE notes SET isPendingSync = 0, isConflicted = 0 WHERE id = :id")
+    // Also stamp remoteUpdatedAt so the Firestore echo of our own write
+    // doesn't look like a newer remote version and trigger a false conflict.
+    @Query("UPDATE notes SET isPendingSync = 0, isConflicted = 0, remoteUpdatedAt = updatedAt WHERE id = :id")
     suspend fun markSynced(id: String)
 
     @Query("UPDATE notes SET isConflicted = 0 WHERE id = :id")
     suspend fun clearConflict(id: String)
+
+    @Query("SELECT id FROM notes")
+    suspend fun getAllNoteIds(): List<String>
 
     @Query("DELETE FROM notes WHERE id = :id")
     suspend fun deleteNote(id: String)

@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -118,7 +119,8 @@ private fun VersionCard(
     timestamp: Long,
     containerColor: androidx.compose.ui.graphics.Color
 ) {
-    val formatted = SimpleDateFormat("MMM d, HH:mm:ss", Locale.getDefault()).format(Date(timestamp))
+    val sdf = remember { SimpleDateFormat("MMM d, HH:mm:ss", Locale.getDefault()) }
+    val formatted = remember(timestamp) { sdf.format(Date(timestamp)) }
     Column(
         modifier = Modifier
             .fillMaxWidth()
