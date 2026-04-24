@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import android.util.Base64
 import coil.compose.AsyncImage
 import com.workspace.manager.domain.model.Asset
 import com.workspace.manager.ui.theme.*
@@ -73,7 +74,9 @@ fun ImageAssetTile(
         contentAlignment = Alignment.Center
     ) {
         AsyncImage(
-            model = asset.localUri ?: asset.downloadUrl,
+            model = remember(asset.id, asset.imageData, asset.localUri, asset.downloadUrl) {
+                imageModelFor(asset)
+            },
             contentDescription = "Asset Image",
             contentScale = ContentScale.Crop,
             modifier = Modifier
@@ -216,3 +219,18 @@ fun ImageAssetTile(
 
 private fun angleBetween(p1: Offset, p2: Offset): Float =
     Math.toDegrees(atan2((p2.y - p1.y).toDouble(), (p2.x - p1.x).toDouble())).toFloat()
+
+/**
+ * Picks the best source for Coil to render. New assets carry [Asset.imageData]
+ * (base64 JPEG synced via Firestore) — decoded to a ByteArray here. Local-only
+ * preview before sync uses [Asset.localUri]. The legacy [Asset.downloadUrl]
+ * field is kept as a final fallback for any pre-migration rows.
+ */
+private fun imageModelFor(asset: Asset): Any? = when {
+    !asset.imageData.isNullOrBlank() -> runCatching {
+        Base64.decode(asset.imageData, Base64.NO_WRAP)
+    }.getOrNull() ?: asset.localUri ?: asset.downloadUrl.takeIf { it.isNotBlank() }
+    !asset.localUri.isNullOrBlank() -> asset.localUri
+    asset.downloadUrl.isNotBlank() -> asset.downloadUrl
+    else -> null
+}

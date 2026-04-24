@@ -71,11 +71,13 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
 
-    // Firebase
+    // Firebase — Storage intentionally omitted (Firestore stores image bytes inline as base64)
     implementation(platform("com.google.firebase:firebase-bom:32.8.1"))
     implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
+
+    // ExifInterface — read EXIF orientation when compressing picked images
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
 
     // Coil
     implementation("io.coil-kt:coil-compose:2.6.0")

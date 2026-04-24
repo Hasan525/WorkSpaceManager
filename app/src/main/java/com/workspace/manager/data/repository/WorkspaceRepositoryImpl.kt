@@ -5,8 +5,8 @@ import com.workspace.manager.data.local.AssetDao
 import com.workspace.manager.data.local.NetworkConnectivityObserver
 import com.workspace.manager.data.local.NoteDao
 import com.workspace.manager.data.mapper.*
-import com.workspace.manager.data.remote.FirebaseStorageDataSource
 import com.workspace.manager.data.remote.FirestoreDataSource
+import com.workspace.manager.data.util.ImageCompressor
 import com.workspace.manager.domain.model.Asset
 import com.workspace.manager.domain.model.ConflictInfo
 import com.workspace.manager.domain.model.ConflictResolution
@@ -29,7 +29,7 @@ class WorkspaceRepositoryImpl @Inject constructor(
     private val noteDao: NoteDao,
     private val assetDao: AssetDao,
     private val firestoreDataSource: FirestoreDataSource,
-    private val storageDataSource: FirebaseStorageDataSource,
+    private val imageCompressor: ImageCompressor,
     private val networkObserver: NetworkConnectivityObserver
 ) : WorkspaceRepository {
 
@@ -84,19 +84,27 @@ class WorkspaceRepositoryImpl @Inject constructor(
 
     // ── Assets ────────────────────────────────────────────────────────────────
 
+    /**
+     * Compresses the picked image, base64-encodes it, and stores the result
+     * directly in Firestore — no Firebase Storage required (works on the free Spark plan).
+     */
     override suspend fun uploadAsset(localUri: Uri): Asset {
         val id = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
+        val base64 = imageCompressor.compressToBase64(localUri)
         val asset = Asset(
-            id = id, downloadUrl = localUri.toString(), localUri = localUri.toString(),
-            sortOrder = now, createdAt = now, updatedAt = now, isPendingSync = true
+            id = id,
+            downloadUrl = "",                 // legacy field — unused in Firestore-only mode
+            localUri = localUri.toString(),   // kept for fast local preview before sync round-trip
+            imageData = base64,
+            sortOrder = now,
+            createdAt = now,
+            updatedAt = now,
+            isPendingSync = true
         )
         assetDao.upsertAsset(asset.toEntity())
         trySync {
-            val url = storageDataSource.uploadImage(localUri, id)
-            val synced = asset.copy(downloadUrl = url, isPendingSync = false)
-            assetDao.upsertAsset(synced.toEntity())
-            firestoreDataSource.saveAsset(synced.toDto())
+            firestoreDataSource.saveAsset(asset.toDto())
             assetDao.markSynced(id)
         }
         return asset
@@ -104,7 +112,7 @@ class WorkspaceRepositoryImpl @Inject constructor(
 
     override suspend fun deleteAsset(id: String) {
         assetDao.deleteAsset(id)
-        trySync { storageDataSource.deleteImage(id); firestoreDataSource.deleteAsset(id) }
+        trySync { firestoreDataSource.deleteAsset(id) }
     }
 
     override suspend fun updateAssetRotation(id: String, angle: Float) {
@@ -174,22 +182,10 @@ class WorkspaceRepositoryImpl @Inject constructor(
                 noteDao.markSynced(entity.id)
             }
         }
+        // Assets carry their bytes inline in imageData — no external blob upload retry needed.
         assetDao.getPendingSyncAssets().forEach { entity ->
             trySync {
-                // If the downloadUrl is still a local URI, the Storage upload failed while
-                // offline — re-upload now before pushing the document to Firestore.
-                val dto = if (entity.downloadUrl.startsWith("content://") ||
-                    entity.downloadUrl.startsWith("file://")
-                ) {
-                    val uploadUri = Uri.parse(entity.localUri ?: entity.downloadUrl)
-                    val url = storageDataSource.uploadImage(uploadUri, entity.id)
-                    val updated = entity.copy(downloadUrl = url)
-                    assetDao.upsertAsset(updated)
-                    updated.toDomain().toDto()
-                } else {
-                    entity.toDomain().toDto()
-                }
-                firestoreDataSource.saveAsset(dto)
+                firestoreDataSource.saveAsset(entity.toDomain().toDto())
                 assetDao.markSynced(entity.id)
             }
         }
@@ -198,7 +194,7 @@ class WorkspaceRepositoryImpl @Inject constructor(
     // ── Internal helpers ──────────────────────────────────────────────────────
 
     /**
-     * Fire-and-forget remote sync. Local-first: callers should never wait for
+     * Fire-and-forget remote sync. Local-first: callers never wait for
      * the network — they update Room synchronously and let Firestore catch up
      * in the background. The repo's [scope] is process-lifetime (SupervisorJob)
      * so the launched block survives ViewModel teardown. Failures leave the
@@ -211,21 +207,12 @@ class WorkspaceRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Mirrors Firestore into Room.
-     *
-     * Conflict detection: a conflict exists only when the local note has
-     * unsynchronised changes (isPendingSync) AND the remote version is newer
-     * than the last version we successfully synced (remoteUpdatedAt), which
-     * means another device wrote to the same note while we were offline.
-     *
-     * Remote deletions: notes/assets absent from the snapshot that have no
-     * local pending changes are removed from Room as well.
+     * Mirrors Firestore into Room. See class-level conflict rules.
      */
     private fun startFirestoreSync() {
         firestoreDataSource.observeNotes().onEach { remoteDtos ->
             val remoteIds = remoteDtos.map { it.id }.toSet()
 
-            // Propagate remote deletions — skip notes with unsync'd local edits
             noteDao.getAllNoteIds().forEach { localId ->
                 if (localId !in remoteIds) {
                     val local = noteDao.getNoteById(localId)
@@ -235,14 +222,12 @@ class WorkspaceRepositoryImpl @Inject constructor(
                 }
             }
 
-            // Upsert / conflict-detect for every remote note
             remoteDtos.forEach { dto ->
                 val local = noteDao.getNoteById(dto.id)
                 when {
                     local == null ->
                         noteDao.upsertNote(dto.toEntity())
 
-                    // Another device modified the same note while we were offline
                     local.isPendingSync && dto.updatedAt > local.remoteUpdatedAt ->
                         noteDao.upsertNote(
                             local.copy(
@@ -252,7 +237,6 @@ class WorkspaceRepositoryImpl @Inject constructor(
                             )
                         )
 
-                    // No local pending changes — accept the remote version
                     !local.isPendingSync ->
                         noteDao.upsertNote(dto.toEntity())
                 }
@@ -262,7 +246,6 @@ class WorkspaceRepositoryImpl @Inject constructor(
         firestoreDataSource.observeAssets().onEach { remoteDtos ->
             val remoteIds = remoteDtos.map { it.id }.toSet()
 
-            // Propagate remote deletions
             assetDao.getAllAssetIds().forEach { localId ->
                 if (localId !in remoteIds) {
                     val local = assetDao.getAssetById(localId)
@@ -272,7 +255,6 @@ class WorkspaceRepositoryImpl @Inject constructor(
                 }
             }
 
-            // Upsert remote assets (local pending rotation/reorder takes priority)
             remoteDtos.forEach { dto ->
                 val local = assetDao.getAssetById(dto.id)
                 if (local == null || !local.isPendingSync) {
