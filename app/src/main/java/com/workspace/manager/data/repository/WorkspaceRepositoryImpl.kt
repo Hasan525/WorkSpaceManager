@@ -108,14 +108,20 @@ class WorkspaceRepositoryImpl @Inject constructor(
     override suspend fun updateAssetRotation(id: String, angle: Float) {
         val now = System.currentTimeMillis()
         assetDao.updateRotation(id, angle, now)
-        val asset = assetDao.getAssetById(id)?.toDomain() ?: return
-        trySync { firestoreDataSource.saveAsset(asset.toDto()); assetDao.markSynced(id) }
+        trySync {
+            firestoreDataSource.updateAssetFields(
+                id,
+                mapOf("rotationAngle" to angle, "updatedAt" to now)
+            )
+            assetDao.markSynced(id)
+        }
     }
 
     override suspend fun reorderAsset(id: String, newSortOrder: Long) {
         assetDao.updateSortOrder(id, newSortOrder)
-        val asset = assetDao.getAssetById(id)?.toDomain() ?: return
-        trySync { firestoreDataSource.saveAsset(asset.toDto()) }
+        trySync {
+            firestoreDataSource.updateAssetFields(id, mapOf("sortOrder" to newSortOrder))
+        }
     }
 
     override suspend fun resolveConflict(noteId: String, resolution: ConflictResolution) {

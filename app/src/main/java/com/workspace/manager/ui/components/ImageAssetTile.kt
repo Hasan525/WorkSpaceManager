@@ -49,6 +49,10 @@ fun ImageAssetTile(
     var hudAngle by remember { mutableFloatStateOf(0f) }
     var isRotating by remember { mutableStateOf(false) }
 
+    LaunchedEffect(asset.rotationAngle) {
+        if (!isRotating) currentAngle = asset.rotationAngle
+    }
+
     val animatedRotation by animateFloatAsState(
         targetValue   = currentAngle,
         animationSpec = spring(dampingRatio = 0.8f),
@@ -87,6 +91,7 @@ fun ImageAssetTile(
                         var prevAngle = 0f
                         var fingerCount: Int
                         var prevFingerCount = 0
+                        var didRotate = false
 
                         do {
                             val event = awaitPointerEvent()
@@ -101,6 +106,7 @@ fun ImageAssetTile(
                             when {
                                 fingerCount == 2 -> {
                                     isRotating = true
+                                    didRotate = true
                                     val angle = angleBetween(pressed[0].position, pressed[1].position)
                                     if (prevAngle != 0f) currentAngle += angle - prevAngle
                                     prevAngle = angle
@@ -110,6 +116,7 @@ fun ImageAssetTile(
                                 }
                                 fingerCount >= 3 -> {
                                     isRotating = true
+                                    didRotate = true
                                     val angle = angleBetween(pressed[0].position, pressed[1].position)
                                     if (prevAngle != 0f) currentAngle += angle - prevAngle
                                     prevAngle = angle
@@ -122,7 +129,7 @@ fun ImageAssetTile(
 
                         showHUD = false
                         isRotating = false
-                        if (fingerCount >= 2) onRotationChanged(currentAngle)
+                        if (didRotate) onRotationChanged(currentAngle)
                     }
                 }
         )

@@ -60,6 +60,10 @@ class FirestoreDataSource @Inject constructor(
         assetsCollection.document(dto.id).set(dto, SetOptions.merge()).await()
     }
 
+    suspend fun updateAssetFields(id: String, fields: Map<String, Any>) {
+        assetsCollection.document(id).update(fields).await()
+    }
+
     suspend fun deleteAsset(id: String) {
         assetsCollection.document(id).delete().await()
     }
