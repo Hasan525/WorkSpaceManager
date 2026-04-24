@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1095123920558",
+    "project_id": "workspacemanager-70db1",
+    "storage_bucket": "workspacemanager-70db1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1095123920558:android:2391b9a8f777d1c4672f3f",
+        "android_client_info": {
+          "package_name": "com.workspace.manager"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6FTpl7OTTqaUvB8Lc1QMjSnaDiAk4TCI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
