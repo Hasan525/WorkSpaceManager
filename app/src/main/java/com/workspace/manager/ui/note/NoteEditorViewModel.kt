@@ -32,7 +32,6 @@ class NoteEditorViewModel @Inject constructor(
     private val deleteNote: DeleteNoteUseCase
 ) : ViewModel() {
 
-    // Keys used in SavedStateHandle to survive process death
     companion object {
         const val KEY_NOTE_ID = "noteId"
         const val KEY_TITLE = "draftTitle"
@@ -45,7 +44,6 @@ class NoteEditorViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(
         NoteEditorUiState(
             noteId = noteId,
-            // Restore draft from saved state (survives process death)
             title = savedStateHandle[KEY_TITLE] ?: "",
             content = savedStateHandle[KEY_CONTENT] ?: ""
         )
@@ -60,13 +58,11 @@ class NoteEditorViewModel @Inject constructor(
 
     private fun loadNote(id: String) {
         viewModelScope.launch {
-            // withTimeoutOrNull prevents hanging forever if Room is slow on first open
             withTimeoutOrNull(3_000L) {
                 repository.observeNotes()
                     .mapNotNull { notes -> notes.find { it.id == id } }
-                    .first()   // collect exactly one item then cancel — safe with mapNotNull
+                    .first()
             }?.let { note ->
-                // Only populate fields if the user hasn't already started typing
                 if (_uiState.value.title.isBlank() && _uiState.value.content.isBlank()) {
                     _uiState.update {
                         it.copy(
@@ -83,16 +79,15 @@ class NoteEditorViewModel @Inject constructor(
 
     fun onTitleChanged(value: String) {
         _uiState.update { it.copy(title = value) }
-        _savedState[KEY_TITLE] = value  // persist to saved state immediately
+        _savedState[KEY_TITLE] = value
     }
 
     fun onContentChanged(value: String) {
         _uiState.update { it.copy(content = value) }
-        _savedState[KEY_CONTENT] = value  // persist to saved state immediately
+        _savedState[KEY_CONTENT] = value
     }
 
     fun save() {
-        // Guard against rapid double-taps — second tap is a no-op while the first is in flight
         if (_uiState.value.isSaving) return
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, isSaved = false) }
@@ -106,9 +101,6 @@ class NoteEditorViewModel @Inject constructor(
                     sortOrder = state.sortOrder,
                     createdAt = state.createdAt
                 )
-                // Ensure the spinner is visible for a perceivable beat so users get
-                // clear feedback that their save was accepted (the local write itself
-                // is sub-frame so without this the spinner only "blinks").
                 val elapsed = System.currentTimeMillis() - started
                 if (elapsed < MIN_SAVE_FEEDBACK_MS) delay(MIN_SAVE_FEEDBACK_MS - elapsed)
                 _uiState.update { it.copy(isSaving = false, isSaved = true) }
@@ -118,7 +110,6 @@ class NoteEditorViewModel @Inject constructor(
         }
     }
 
-    /** Called by the screen after it has acted on isSaved=true (e.g. navigated back) */
     fun onSavedHandled() = _uiState.update { it.copy(isSaved = false) }
 
     fun delete(onComplete: () -> Unit) {

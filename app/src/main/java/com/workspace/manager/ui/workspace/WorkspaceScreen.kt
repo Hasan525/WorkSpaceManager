@@ -406,7 +406,6 @@ private fun WorkspaceGrid(
     val gridState = rememberLazyStaggeredGridState()
     var dragTargetIndex by remember { mutableIntStateOf(-1) }
     val expanded = isExpandedWidth()
-    // Wider tiles on tablet so we don't end up with 6+ skinny columns
     val cellMinWidth = if (expanded) 200.dp else Dim.GridMinTileWidth
 
     LazyVerticalStaggeredGrid(
@@ -416,7 +415,6 @@ private fun WorkspaceGrid(
             start  = Dim.ScreenEdge,
             end    = Dim.ScreenEdge,
             top    = Dim.Space12,
-            // Leave clearance for the FAB so the bottom row isn't covered when scrolled all the way
             bottom = Dim.FabSize + Dim.Space24
         ),
         horizontalArrangement = Arrangement.spacedBy(Dim.Space12),

@@ -6,13 +6,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-/**
- * Material 3 type scale, bumped +2sp across the board for a slightly larger feel.
- * Line heights also +2sp to preserve the original size-to-line-height ratio.
- * Use these via `MaterialTheme.typography.*` — never hardcode sp values in screens.
- */
 val WorkspaceTypography = Typography(
-    // Display
     displayLarge = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Normal,
@@ -34,8 +28,6 @@ val WorkspaceTypography = Typography(
         lineHeight    = 46.sp,
         letterSpacing = 0.sp
     ),
-
-    // Headline
     headlineLarge = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Normal,
@@ -57,8 +49,6 @@ val WorkspaceTypography = Typography(
         lineHeight    = 34.sp,
         letterSpacing = 0.sp
     ),
-
-    // Title
     titleLarge = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Normal,
@@ -80,8 +70,6 @@ val WorkspaceTypography = Typography(
         lineHeight    = 22.sp,
         letterSpacing = 0.1.sp
     ),
-
-    // Body
     bodyLarge = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Normal,
@@ -103,8 +91,6 @@ val WorkspaceTypography = Typography(
         lineHeight    = 18.sp,
         letterSpacing = 0.4.sp
     ),
-
-    // Label
     labelLarge = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Medium,

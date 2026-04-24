@@ -17,21 +17,11 @@ import javax.inject.Singleton
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * Loads an image from a content Uri, downscales it, applies EXIF orientation,
- * JPEG-compresses it, and base64-encodes the result so it can be stored as a
- * single string field in a Firestore document.
- *
- * Firestore caps each document at 1 MiB. Base64 inflates binary by ~33%, so the
- * compressed JPEG must stay under ~750 KB. We try a sequence of (maxEdge, quality)
- * settings and return the first one that fits.
- */
 @Singleton
 class ImageCompressor @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
 
-    /** Returns base64-encoded JPEG bytes, ready to drop into a Firestore string field. */
     suspend fun compressToBase64(uri: Uri): String = withContext(Dispatchers.IO) {
         val raw = decodeAndOrient(uri)
             ?: throw IOException("Could not decode image from $uri")
@@ -53,24 +43,20 @@ class ImageCompressor @Inject constructor(
         }
     }
 
-    /** Decode the bitmap with sample-size optimisation and apply EXIF rotation. */
     private fun decodeAndOrient(uri: Uri): Bitmap? {
         val resolver = context.contentResolver
 
-        // Pass 1 — read bounds only so we can pick a sane sample size
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
 
         val sample = computeSampleSize(bounds.outWidth, bounds.outHeight, MAX_DECODE_EDGE)
 
-        // Pass 2 — actual decode
         val opts = BitmapFactory.Options().apply { inSampleSize = sample }
         val decoded = resolver.openInputStream(uri)
             ?.use { BitmapFactory.decodeStream(it, null, opts) }
             ?: return null
 
-        // EXIF orientation — phones routinely store landscape photos with a rotation flag
         val rotation = resolver.openInputStream(uri)?.use { stream ->
             try { ExifInterface(stream).rotationDegrees } catch (_: Exception) { 0 }
         } ?: 0
@@ -111,9 +97,7 @@ class ImageCompressor @Inject constructor(
     }
 
     companion object {
-        // ~750 KB binary → ~1000 KB base64; comfortably under Firestore's 1 MiB doc cap
         private const val MAX_BINARY_BYTES = 750_000
-        // Don't bother decoding at full sensor resolution — saves memory on very large source files
         private const val MAX_DECODE_EDGE = 2048
 
         private data class Setting(val maxEdge: Int, val quality: Int)

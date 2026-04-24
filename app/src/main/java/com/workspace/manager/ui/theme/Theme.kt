@@ -43,8 +43,6 @@ fun WorkspaceTheme(content: @Composable () -> Unit) {
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            // Edge-to-edge: leave system bars transparent and let layout draw under them.
-            // Just enforce dark icons.
             val window = (view.context as Activity).window
             WindowCompat.getInsetsController(window, view).apply {
                 isAppearanceLightStatusBars = false

@@ -75,7 +75,6 @@ fun NoteEditorScreen(
                 .background(BgBase)
                 .imePadding()
         ) {
-            // Centred reading column — caps line length on tablets, full width on phones
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -115,7 +114,6 @@ fun NoteEditorScreen(
                         }
                         inner()
                     },
-                    // Generous min height so the field is comfortably tappable; grows with content
                     modifier = Modifier
                         .fillMaxWidth()
                         .defaultMinSize(minHeight = 280.dp)
@@ -194,8 +192,6 @@ private fun EditorTopBar(
                     )
                 }
             }
-            // Save button — keeps the same size/shape whether idle or loading,
-            // so the layout doesn't shift and the loading state is unmistakable.
             IconButton(
                 onClick = onSave,
                 enabled = !isSaving,
@@ -261,7 +257,7 @@ private fun EditorStatusBar(
                 StatusItem(value = wordCount.toString(), label = if (wordCount == 1) "word" else "words")
                 Box(
                     modifier = Modifier
-                        .size(Dim.Space2 + Dim.Space2)   // 4dp dot
+                        .size(Dim.Space2 + Dim.Space2)
                         .background(TextMuted, CircleShape)
                 )
                 StatusItem(value = charCount.toString(), label = if (charCount == 1) "char" else "chars")

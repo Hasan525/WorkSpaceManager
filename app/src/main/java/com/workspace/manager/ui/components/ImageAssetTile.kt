@@ -47,7 +47,6 @@ fun ImageAssetTile(
     var currentAngle by remember(asset.id) { mutableFloatStateOf(asset.rotationAngle) }
     var showHUD by remember { mutableStateOf(false) }
     var hudAngle by remember { mutableFloatStateOf(0f) }
-    // Transient visual state while a 2+ finger rotation is in progress
     var isRotating by remember { mutableStateOf(false) }
 
     val animatedRotation by animateFloatAsState(
@@ -56,7 +55,6 @@ fun ImageAssetTile(
         label         = "rotation"
     )
 
-    // Tile is "active" (highlighted) when either selected by tap OR mid-rotation
     val isActive = isSelected || isRotating
 
     Box(
@@ -100,10 +98,6 @@ fun ImageAssetTile(
                             }
                             prevFingerCount = fingerCount
 
-                            // Only consume when 2+ fingers (rotation). Single-finger touches
-                            // pass through so the parent grid can scroll, the wrapping
-                            // detectDragGesturesAfterLongPress can fire (drag-reorder), and
-                            // the outer clickable can register the tap (selection).
                             when {
                                 fingerCount == 2 -> {
                                     isRotating = true
@@ -133,7 +127,6 @@ fun ImageAssetTile(
                 }
         )
 
-        // Bottom scrim — keeps badge readable over any image
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -146,7 +139,6 @@ fun ImageAssetTile(
                 )
         )
 
-        // Inner glow ring — extra emphasis when active
         if (isActive) {
             Box(
                 modifier = Modifier
@@ -159,14 +151,12 @@ fun ImageAssetTile(
             )
         }
 
-        // Rotation HUD takes priority over the delete button — they share the top-end corner
         if (showHUD) {
             RotationHUD(
                 angleDegrees = hudAngle,
                 modifier = Modifier.align(Alignment.TopEnd)
             )
         } else {
-            // Delete button only appears once the user has tapped to select
             AnimatedVisibility(
                 visible = isSelected,
                 enter = fadeIn() + scaleIn(initialScale = 0.7f),
@@ -220,12 +210,6 @@ fun ImageAssetTile(
 private fun angleBetween(p1: Offset, p2: Offset): Float =
     Math.toDegrees(atan2((p2.y - p1.y).toDouble(), (p2.x - p1.x).toDouble())).toFloat()
 
-/**
- * Picks the best source for Coil to render. New assets carry [Asset.imageData]
- * (base64 JPEG synced via Firestore) — decoded to a ByteArray here. Local-only
- * preview before sync uses [Asset.localUri]. The legacy [Asset.downloadUrl]
- * field is kept as a final fallback for any pre-migration rows.
- */
 private fun imageModelFor(asset: Asset): Any? = when {
     !asset.imageData.isNullOrBlank() -> runCatching {
         Base64.decode(asset.imageData, Base64.NO_WRAP)

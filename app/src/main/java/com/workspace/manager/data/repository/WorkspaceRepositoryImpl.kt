@@ -43,8 +43,6 @@ class WorkspaceRepositoryImpl @Inject constructor(
         observeConnectivity()
     }
 
-    // ── Observations ──────────────────────────────────────────────────────────
-
     override fun observeNotes(): Flow<List<Note>> =
         noteDao.observeAllNotes().map { it.map { e -> e.toDomain() } }
 
@@ -64,8 +62,6 @@ class WorkspaceRepositoryImpl @Inject constructor(
             }
         }
 
-    // ── Notes ─────────────────────────────────────────────────────────────────
-
     override suspend fun saveNote(note: Note) {
         noteDao.upsertNote(note.toEntity().copy(isPendingSync = true))
         trySync { firestoreDataSource.saveNote(note.toDto()); noteDao.markSynced(note.id) }
@@ -82,20 +78,14 @@ class WorkspaceRepositoryImpl @Inject constructor(
         trySync { firestoreDataSource.saveNote(note.toDto()) }
     }
 
-    // ── Assets ────────────────────────────────────────────────────────────────
-
-    /**
-     * Compresses the picked image, base64-encodes it, and stores the result
-     * directly in Firestore — no Firebase Storage required (works on the free Spark plan).
-     */
     override suspend fun uploadAsset(localUri: Uri): Asset {
         val id = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
         val base64 = imageCompressor.compressToBase64(localUri)
         val asset = Asset(
             id = id,
-            downloadUrl = "",                 // legacy field — unused in Firestore-only mode
-            localUri = localUri.toString(),   // kept for fast local preview before sync round-trip
+            downloadUrl = "",
+            localUri = localUri.toString(),
             imageData = base64,
             sortOrder = now,
             createdAt = now,
@@ -127,8 +117,6 @@ class WorkspaceRepositoryImpl @Inject constructor(
         val asset = assetDao.getAssetById(id)?.toDomain() ?: return
         trySync { firestoreDataSource.saveAsset(asset.toDto()) }
     }
-
-    // ── Conflict resolution ───────────────────────────────────────────────────
 
     override suspend fun resolveConflict(noteId: String, resolution: ConflictResolution) {
         val entity = noteDao.getNoteById(noteId) ?: return
@@ -173,8 +161,6 @@ class WorkspaceRepositoryImpl @Inject constructor(
         }
     }
 
-    // ── Pending sync ──────────────────────────────────────────────────────────
-
     override suspend fun syncPendingChanges() {
         noteDao.getPendingSyncNotes().forEach { entity ->
             trySync {
@@ -182,7 +168,6 @@ class WorkspaceRepositoryImpl @Inject constructor(
                 noteDao.markSynced(entity.id)
             }
         }
-        // Assets carry their bytes inline in imageData — no external blob upload retry needed.
         assetDao.getPendingSyncAssets().forEach { entity ->
             trySync {
                 firestoreDataSource.saveAsset(entity.toDomain().toDto())
@@ -191,24 +176,12 @@ class WorkspaceRepositoryImpl @Inject constructor(
         }
     }
 
-    // ── Internal helpers ──────────────────────────────────────────────────────
-
-    /**
-     * Fire-and-forget remote sync. Local-first: callers never wait for
-     * the network — they update Room synchronously and let Firestore catch up
-     * in the background. The repo's [scope] is process-lifetime (SupervisorJob)
-     * so the launched block survives ViewModel teardown. Failures leave the
-     * row marked isPendingSync; SyncWorker / connectivity observer retries.
-     */
     private fun trySync(block: suspend () -> Unit) {
         scope.launch {
-            try { block() } catch (_: Exception) { /* queued — will retry on next connection */ }
+            try { block() } catch (_: Exception) { }
         }
     }
 
-    /**
-     * Mirrors Firestore into Room. See class-level conflict rules.
-     */
     private fun startFirestoreSync() {
         firestoreDataSource.observeNotes().onEach { remoteDtos ->
             val remoteIds = remoteDtos.map { it.id }.toSet()

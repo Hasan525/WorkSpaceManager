@@ -1,23 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Workspace Manager</string>
-    <string name="add_note">Add Note</string>
-    <string name="add_image">Add Image</string>
-    <string name="untitled_note">Untitled Note</string>
-    <string name="conflict_detected">Conflict Detected</string>
-    <string name="conflict_message">This note was edited both locally and remotely. Choose which version to keep.</string>
-    <string name="keep_local">Keep Local</string>
-    <string name="keep_remote">Keep Remote</string>
-    <string name="syncing">Syncing…</string>
-    <string name="offline">Offline</string>
-    <string name="online">Online</string>
-    <string name="workspace">Workspace</string>
-    <string name="edit_note">Edit Note</string>
-    <string name="save">Save</string>
-    <string name="delete">Delete</string>
-    <string name="cancel">Cancel</string>
-    <string name="title_hint">Title…</string>
-    <string name="content_hint">Start writing…</string>
-    <string name="rotation_hud_label">Rotation</string>
-    <string name="conflicts_banner">You have unresolved conflicts. Tap to resolve.</string>
 </resources>

@@ -4,7 +4,6 @@ data class Asset(
     val id: String,
     val downloadUrl: String,
     val localUri: String? = null,
-    /** Base64-encoded JPEG bytes — primary cross-device image source. */
     val imageData: String? = null,
     val rotationAngle: Float = 0f,
     val sortOrder: Long,

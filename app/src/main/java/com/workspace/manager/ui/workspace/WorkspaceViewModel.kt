@@ -55,10 +55,6 @@ class WorkspaceViewModel @Inject constructor(
             .launchIn(viewModelScope)
     }
 
-    /**
-     * Creates a new note and invokes [onCreated] with the new note's ID so the
-     * caller can navigate directly to the editor — removing the extra tap.
-     */
     fun createNote(onCreated: (noteId: String) -> Unit = {}) {
         viewModelScope.launch {
             val id = UUID.randomUUID().toString()
@@ -72,7 +68,6 @@ class WorkspaceViewModel @Inject constructor(
         viewModelScope.launch { deleteNote.invoke(id) }
     }
 
-    /** Stage an asset for deletion — UI shows the confirmation dialog. */
     fun requestDeleteAsset(id: String) {
         _uiState.update { it.copy(assetPendingDelete = id) }
     }
@@ -103,7 +98,6 @@ class WorkspaceViewModel @Inject constructor(
         }
     }
 
-    /** Toggle selection for an image tile. Tapping the same id clears it; tapping a different id switches. */
     fun toggleAssetSelection(id: String) {
         _uiState.update {
             val next = if (it.selectedAssetId == id) null else id
@@ -157,10 +151,6 @@ class WorkspaceViewModel @Inject constructor(
 
     fun clearError() = _uiState.update { it.copy(error = null) }
 
-    /**
-     * Computes a sort order that places an item at [index] using midpoint
-     * arithmetic so no global renumbering is required.
-     */
     private fun computeSortOrderAt(items: List<WorkspaceItem>, index: Int): Long {
         return when {
             items.isEmpty() -> System.currentTimeMillis()

@@ -20,14 +20,11 @@ class FirestoreDataSource @Inject constructor(
     private val notesCollection get() = firestore.collection("workspace").document("shared").collection("notes")
     private val assetsCollection get() = firestore.collection("workspace").document("shared").collection("assets")
 
-    /** Sign in anonymously so every device gets a stable UID */
     suspend fun ensureAuth() {
         if (auth.currentUser == null) {
             auth.signInAnonymously().await()
         }
     }
-
-    // ── Notes ─────────────────────────────────────────────────────────────────
 
     fun observeNotes(): Flow<List<NoteDto>> = callbackFlow {
         val registration = notesCollection.addSnapshotListener { snapshot, error ->
@@ -47,8 +44,6 @@ class FirestoreDataSource @Inject constructor(
     suspend fun deleteNote(id: String) {
         notesCollection.document(id).delete().await()
     }
-
-    // ── Assets ────────────────────────────────────────────────────────────────
 
     fun observeAssets(): Flow<List<AssetDto>> = callbackFlow {
         val registration = assetsCollection.addSnapshotListener { snapshot, error ->

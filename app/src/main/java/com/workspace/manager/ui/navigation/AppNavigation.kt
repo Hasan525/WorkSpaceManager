@@ -14,13 +14,6 @@ object Routes {
     const val NOTE_EDITOR = "note_editor"
     const val ARG_NOTE_ID = "noteId"
 
-    /**
-     * Route for the note editor.  Uses an optional query-parameter so that
-     * "note_editor" (new note, noteId = null) and
-     * "note_editor?noteId=<id>" (existing note) share one composable and
-     * avoid the ambiguity that `note_editor/{noteId}` would have with the
-     * literal path segment "new".
-     */
     fun noteEditor(id: String? = null): String =
         if (id == null) NOTE_EDITOR else "$NOTE_EDITOR?$ARG_NOTE_ID=$id"
 }

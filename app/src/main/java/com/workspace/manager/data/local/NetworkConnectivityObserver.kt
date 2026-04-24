@@ -25,13 +25,11 @@ class NetworkConnectivityObserver @Inject constructor(
     val isConnected: Flow<Boolean> = callbackFlow {
         val manager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-        // Emit current state FIRST to avoid missing the initial value
         trySend(manager.isCurrentlyConnected())
 
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) { trySend(true) }
             override fun onLost(network: Network) {
-                // A second network might still be available
                 trySend(manager.isCurrentlyConnected())
             }
             override fun onUnavailable() { trySend(false) }
@@ -55,4 +53,3 @@ class NetworkConnectivityObserver @Inject constructor(
         awaitClose { manager.unregisterNetworkCallback(callback) }
     }.distinctUntilChanged()
 }
-
