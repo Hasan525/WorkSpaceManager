@@ -1,6 +1,7 @@
 package com.workspace.manager.ui.workspace
 
 import android.Manifest
+import android.app.Activity
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,6 +11,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.*
@@ -24,13 +26,19 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draganddrop.DragAndDropEvent
+import androidx.compose.ui.draganddrop.DragAndDropTarget
+import androidx.compose.ui.draganddrop.mimeTypes
+import androidx.compose.ui.draganddrop.toAndroidDragEvent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -48,7 +56,8 @@ fun WorkspaceScreen(
     viewModel: WorkspaceViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var fabExpanded by remember { mutableStateOf(false) }
+    var fabExpanded by rememberSaveable { mutableStateOf(false) }
+    var isDropHovering by remember { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -65,6 +74,31 @@ fun WorkspaceScreen(
             Manifest.permission.READ_MEDIA_IMAGES
         else Manifest.permission.READ_EXTERNAL_STORAGE
         permissionLauncher.launch(permission)
+    }
+
+    val context = LocalContext.current
+    val dndTarget = remember {
+        object : DragAndDropTarget {
+            override fun onStarted(event: DragAndDropEvent) { isDropHovering = true }
+            override fun onEnded(event: DragAndDropEvent) { isDropHovering = false }
+            override fun onEntered(event: DragAndDropEvent) { isDropHovering = true }
+            override fun onExited(event: DragAndDropEvent) { isDropHovering = false }
+
+            override fun onDrop(event: DragAndDropEvent): Boolean {
+                isDropHovering = false
+                val androidEvent = event.toAndroidDragEvent()
+                val activity = context as? Activity ?: return false
+                val permissions = activity.requestDragAndDropPermissions(androidEvent) ?: return false
+                val clipData = androidEvent.clipData ?: run {
+                    permissions.release()
+                    return false
+                }
+                val accepted = (0 until clipData.itemCount)
+                    .mapNotNull { clipData.getItemAt(it).uri }
+                    .onEach { uri -> viewModel.pickImage(uri, permissions) }
+                return if (accepted.isNotEmpty()) true else { permissions.release(); false }
+            }
+        }
     }
 
     Scaffold(
@@ -101,6 +135,17 @@ fun WorkspaceScreen(
                 .padding(padding)
                 .background(BgBase)
                 .imePadding()
+                .dragAndDropTarget(
+                    shouldStartDragAndDrop = { event ->
+                        event.mimeTypes().any { it.startsWith("image/") }
+                    },
+                    target = dndTarget
+                )
+                .then(
+                    if (isDropHovering)
+                        Modifier.border(Dim.BorderThick, Forest, RoundedCornerShape(Dim.RadiusLg))
+                    else Modifier
+                )
         ) {
             if (uiState.items.isEmpty() && !uiState.isLoading) {
                 EmptyWorkspaceHint(modifier = Modifier.align(Alignment.Center))

@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,13 +45,26 @@ fun ImageAssetTile(
     onDeleteRequested: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var currentAngle by remember(asset.id) { mutableFloatStateOf(asset.rotationAngle) }
+    var currentAngle by rememberSaveable(asset.id) { mutableFloatStateOf(asset.rotationAngle) }
+    // Sentinel: NaN = no in-flight rotation; any other value = a partial gesture that
+    // was interrupted before onRotationChanged could fire. Survives process death.
+    var pendingCommit by rememberSaveable(asset.id) { mutableFloatStateOf(Float.NaN) }
     var showHUD by remember { mutableStateOf(false) }
     var hudAngle by remember { mutableFloatStateOf(0f) }
     var isRotating by remember { mutableStateOf(false) }
 
+    LaunchedEffect(asset.id) {
+        if (!pendingCommit.isNaN()) {
+            currentAngle = pendingCommit
+            onRotationChanged(pendingCommit)
+            pendingCommit = Float.NaN
+        }
+    }
+
     LaunchedEffect(asset.rotationAngle) {
-        if (!isRotating) currentAngle = asset.rotationAngle
+        if (!isRotating && pendingCommit.isNaN()) {
+            currentAngle = asset.rotationAngle
+        }
     }
 
     val animatedRotation by animateFloatAsState(
@@ -111,6 +125,7 @@ fun ImageAssetTile(
                                     if (prevAngle != 0f) currentAngle += angle - prevAngle
                                     prevAngle = angle
                                     hudAngle = currentAngle
+                                    pendingCommit = currentAngle
                                     showHUD = false
                                     pressed.forEach { it.consume() }
                                 }
@@ -121,6 +136,7 @@ fun ImageAssetTile(
                                     if (prevAngle != 0f) currentAngle += angle - prevAngle
                                     prevAngle = angle
                                     hudAngle = currentAngle
+                                    pendingCommit = currentAngle
                                     showHUD = true
                                     pressed.forEach { it.consume() }
                                 }
@@ -129,7 +145,10 @@ fun ImageAssetTile(
 
                         showHUD = false
                         isRotating = false
-                        if (didRotate) onRotationChanged(currentAngle)
+                        if (didRotate) {
+                            onRotationChanged(currentAngle)
+                            pendingCommit = Float.NaN
+                        }
                     }
                 }
         )
