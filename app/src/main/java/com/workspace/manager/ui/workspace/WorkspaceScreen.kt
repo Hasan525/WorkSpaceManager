@@ -22,18 +22,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.workspace.manager.domain.model.WorkspaceItem
 import com.workspace.manager.ui.components.ConflictDialog
 import com.workspace.manager.ui.components.ImageAssetTile
 import com.workspace.manager.ui.components.NoteTile
-import com.workspace.manager.ui.theme.OfflineOrange
-import com.workspace.manager.ui.theme.SyncGreen
+import com.workspace.manager.ui.theme.*
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +54,7 @@ fun WorkspaceScreen(
     }
 
     Scaffold(
+        containerColor = BgBase,
         topBar = {
             WorkspaceTopBar(
                 isOnline = uiState.isOnline,
@@ -68,6 +69,7 @@ fun WorkspaceScreen(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Image picker FAB
                 SmallFloatingActionButton(
                     onClick = {
                         val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
@@ -75,7 +77,9 @@ fun WorkspaceScreen(
                         else Manifest.permission.READ_EXTERNAL_STORAGE
                         permissionLauncher.launch(permission)
                     },
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    containerColor = BgHighlight,
+                    contentColor   = NeutralText,
+                    shape          = RoundedCornerShape(14.dp)
                 ) {
                     Icon(Icons.Default.Image, contentDescription = "Add Image")
                 }
@@ -83,15 +87,20 @@ fun WorkspaceScreen(
                 // Creates note then immediately navigates to the editor
                 FloatingActionButton(
                     onClick = { viewModel.createNote(onCreated = onNoteClick) },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    shape = CircleShape
+                    containerColor = Violet,
+                    contentColor   = NeutralWhite,
+                    shape          = CircleShape
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Note", tint = Color.White)
+                    Icon(Icons.Default.Add, contentDescription = "Add Note")
                 }
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)
+            .background(BgBase)
+        ) {
             if (uiState.items.isEmpty() && !uiState.isLoading) {
                 EmptyWorkspaceHint(modifier = Modifier.align(Alignment.Center))
             } else {
@@ -106,12 +115,21 @@ fun WorkspaceScreen(
             }
 
             if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Violet,
+                    strokeWidth = 3.dp
+                )
             }
 
             uiState.error?.let { errorMsg ->
                 Snackbar(
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp),
+                    containerColor     = BgElevated,
+                    contentColor       = NeutralWhite,
+                    actionContentColor = VioletLight,
                     action = {
                         TextButton(onClick = viewModel::clearError) { Text("OK") }
                     }
@@ -138,58 +156,118 @@ private fun WorkspaceTopBar(
 ) {
     Column {
         TopAppBar(
-            title = { Text("Workspace", style = MaterialTheme.typography.titleLarge) },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Branded "W" logo box
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(Violet, RoundedCornerShape(9.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "W",
+                            color = NeutralWhite,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = "Workspace",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = NeutralWhite
+                    )
+                }
+            },
             actions = {
+                // Online / offline pill
                 Row(
+                    modifier = Modifier
+                        .padding(end = 16.dp)
+                        .background(
+                            color = (if (isOnline) StatusGreen else StatusAmber).copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(end = 16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(8.dp)
+                            .size(7.dp)
                             .background(
-                                if (isOnline) SyncGreen else OfflineOrange,
+                                if (isOnline) StatusGreen else StatusAmber,
                                 CircleShape
                             )
                     )
-                    Spacer(Modifier.width(6.dp))
                     Text(
                         text = if (isOnline) "Online" else "Offline",
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (isOnline) SyncGreen else OfflineOrange
+                        color = if (isOnline) StatusGreen else StatusAmber
                     )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background
+                containerColor = BgBase,
+                scrolledContainerColor = BgSurface
             )
         )
 
-        AnimatedVisibility(visible = conflictCount > 0) {
+        // Conflict banner
+        AnimatedVisibility(
+            visible = conflictCount > 0,
+            enter = expandVertically() + fadeIn(),
+            exit  = shrinkVertically() + fadeOut()
+        ) {
             Surface(
                 onClick = onConflictBannerClick,
-                color = MaterialTheme.colorScheme.errorContainer,
+                color = StatusRed.copy(alpha = 0.10f),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .background(StatusRed.copy(alpha = 0.15f), RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = StatusRed,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "$conflictCount unresolved conflict${if (conflictCount > 1) "s" else ""}",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = StatusRed
+                        )
+                        Text(
+                            text = "Tap to resolve",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = NeutralText
+                        )
+                    }
                     Icon(
-                        Icons.Default.Warning,
+                        Icons.Default.ChevronRight,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                        tint = NeutralMuted,
                         modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "$conflictCount unresolved conflict${if (conflictCount > 1) "s" else ""}. Tap to resolve.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer
                     )
                 }
             }
         }
+
+        // Bottom divider
+        HorizontalDivider(color = NeutralBorder, thickness = 0.5.dp)
     }
 }
 
@@ -213,7 +291,9 @@ private fun WorkspaceGrid(
         contentPadding = PaddingValues(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalItemSpacing = 12.dp,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BgBase)
     ) {
         itemsIndexed(items, key = { _, item -> item.id }) { index, item ->
             val isDragged = item.id == draggedItemId
@@ -291,21 +371,34 @@ private fun WorkspaceGrid(
 @Composable
 private fun EmptyWorkspaceHint(modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier.padding(32.dp),
+        modifier = modifier.padding(40.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("✨", style = MaterialTheme.typography.displayLarge)
-        Spacer(Modifier.height(16.dp))
+        // Icon box
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .background(VioletDeep, RoundedCornerShape(20.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.Add,
+                contentDescription = null,
+                tint = VioletLight,
+                modifier = Modifier.size(36.dp)
+            )
+        }
+        Spacer(Modifier.height(24.dp))
         Text(
             text = "Your workspace is empty",
             style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground
+            color = NeutralWhite
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "Tap + to create a note\nor add an image from your gallery.",
+            text = "Tap  +  to create your first note\nor add an image from your gallery.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+            color = NeutralText
         )
     }
 }

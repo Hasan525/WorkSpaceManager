@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.WorkspaceManager" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        Force a dark window background so the system shows a dark splash /
+        launch screen before Compose has drawn its first frame.  Without this
+        the Activity briefly flashes white on cold start even in dark mode.
+    -->
+    <style name="Theme.WorkspaceManager" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/bg_base</item>
+        <item name="android:statusBarColor">@color/bg_base</item>
+        <item name="android:navigationBarColor">@color/bg_base</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>

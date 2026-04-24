@@ -15,11 +15,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.workspace.manager.domain.model.Asset
+import com.workspace.manager.ui.theme.*
 import kotlin.math.atan2
 
 @Composable
@@ -44,14 +47,15 @@ fun ImageAssetTile(
             .fillMaxWidth()
             .aspectRatio(1f)
             .clip(RoundedCornerShape(16.dp))
+            .background(BgSurface)
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                color = if (isSelected) Violet else NeutralBorder,
                 shape = RoundedCornerShape(16.dp)
             ),
         contentAlignment = Alignment.Center
     ) {
+        // Full-bleed image with rotation
         AsyncImage(
             model = asset.localUri ?: asset.downloadUrl,
             contentDescription = "Asset Image",
@@ -133,6 +137,33 @@ fun ImageAssetTile(
                 }
         )
 
+        // Gradient scrim at bottom — ensures badges / HUD are always readable
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .align(Alignment.BottomCenter)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, Color(0xCC0C0C14))
+                    )
+                )
+        )
+
+        // Selection glow ring (violet when selected)
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .border(
+                        width = 2.dp,
+                        color = VioletGlow,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+            )
+        }
+
+        // Rotation HUD — top-end corner
         if (showHUD) {
             RotationHUD(
                 angleDegrees = hudAngle,
@@ -140,21 +171,28 @@ fun ImageAssetTile(
             )
         }
 
+        // Pending-sync badge — bottom-start corner
         if (asset.isPendingSync) {
-            Box(
+            Row(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(6.dp)
+                    .padding(8.dp)
                     .background(
-                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+                        StatusAmber.copy(alpha = 0.18f),
                         RoundedCornerShape(8.dp)
                     )
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                    .padding(horizontal = 7.dp, vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "⏳ Syncing",
+                    text = "⏳",
+                    style = MaterialTheme.typography.labelSmall
+                )
+                Text(
+                    text = "Syncing",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    color = StatusAmber
                 )
             }
         }

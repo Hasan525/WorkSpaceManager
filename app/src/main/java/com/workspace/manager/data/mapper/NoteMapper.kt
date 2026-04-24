@@ -32,5 +32,8 @@ fun NoteDto.toEntity(): NoteEntity = NoteEntity(
     id = id, title = title, content = content,
     sortOrder = sortOrder, createdAt = createdAt, updatedAt = updatedAt,
     isPendingSync = false, isConflicted = false,
-    remoteContent = null, remoteUpdatedAt = 0L
+    remoteContent = null,
+    // Track the remote version we last received so conflict detection can compare
+    // against it instead of always treating 0L as the baseline.
+    remoteUpdatedAt = updatedAt
 )

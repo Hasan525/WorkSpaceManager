@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="bg_base">#FF0C0C14</color>
     <string name="add_image">Add Image</string>
     <string name="add_note">Add Note</string>
     <string name="app_name">Workspace Manager</string>
@@ -26,5 +27,10 @@
     <string name="title_hint">Title…</string>
     <string name="untitled_note">Untitled Note</string>
     <string name="workspace">Workspace</string>
-    <style name="Theme.WorkspaceManager" parent="android:Theme.Material.Light.NoActionBar"/>
+    <style name="Theme.WorkspaceManager" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/bg_base</item>
+        <item name="android:statusBarColor">@color/bg_base</item>
+        <item name="android:navigationBarColor">@color/bg_base</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>

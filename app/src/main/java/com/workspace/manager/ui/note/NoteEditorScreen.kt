@@ -1,7 +1,9 @@
 package com.workspace.manager.ui.note
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -14,10 +16,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.workspace.manager.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,10 +38,16 @@ fun NoteEditorScreen(
         if (uiState.isSaved && noteId == null) onBack()
     }
 
+    // Word count derived from content
+    val wordCount = remember(uiState.content) {
+        uiState.content.trim().split("\\s+".toRegex()).filter { it.isNotEmpty() }.size
+    }
+
     Scaffold(
+        containerColor = BgBase,
         topBar = {
             TopAppBar(
-                title = { Text(if (noteId == null) "New Note" else "Edit Note") },
+                title = { },    // title area left clear — content speaks for itself
                 navigationIcon = {
                     IconButton(onClick = {
                         // Auto-save on back if the note has any content
@@ -48,7 +58,8 @@ fun NoteEditorScreen(
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = NeutralText
                         )
                     }
                 },
@@ -58,31 +69,74 @@ fun NoteEditorScreen(
                             Icon(
                                 Icons.Default.Delete,
                                 contentDescription = "Delete",
-                                tint = MaterialTheme.colorScheme.error
+                                tint = StatusRed.copy(alpha = 0.8f)
                             )
                         }
                     }
-                    IconButton(
-                        onClick = viewModel::save,
-                        enabled = !uiState.isSaving
+                    // Save button / spinner
+                    Box(
+                        modifier = Modifier.padding(end = 8.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         if (uiState.isSaving) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
+                                color = Violet,
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Icon(Icons.Default.Check, contentDescription = "Save")
+                            IconButton(onClick = viewModel::save) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .background(Violet, RoundedCornerShape(10.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.Check,
+                                        contentDescription = "Save",
+                                        tint = NeutralWhite,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = BgBase
                 )
             )
+        },
+        bottomBar = {
+            // Minimal footer — word count + status label
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(BgSurface)
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "$wordCount ${if (wordCount == 1) "word" else "words"}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = NeutralMuted
+                )
+                Text(
+                    text = if (noteId == null) "New Note" else "Editing",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = NeutralMuted
+                )
+            }
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(BgBase)
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -91,23 +145,28 @@ fun NoteEditorScreen(
             ) {
                 Spacer(Modifier.height(8.dp))
 
-                // Title field
+                // Title field — large, prominent
                 BasicTextField(
                     value = uiState.title,
                     onValueChange = viewModel::onTitleChanged,
                     textStyle = TextStyle(
-                        fontSize = 26.sp,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+                        fontSize     = 28.sp,
+                        fontWeight   = FontWeight.Bold,
+                        color        = NeutralWhite,
+                        lineHeight   = 36.sp,
+                        letterSpacing = (-0.3).sp
                     ),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    cursorBrush = SolidColor(Violet),
                     decorationBox = { inner ->
                         if (uiState.title.isEmpty()) {
                             Text(
                                 "Title…",
                                 style = TextStyle(
-                                    fontSize = 26.sp,
-                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.35f)
+                                    fontSize     = 28.sp,
+                                    fontWeight   = FontWeight.Bold,
+                                    color        = NeutralMuted,
+                                    lineHeight   = 36.sp,
+                                    letterSpacing = (-0.3).sp
                                 )
                             )
                         }
@@ -116,27 +175,33 @@ fun NoteEditorScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(Modifier.height(4.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(6.dp))
+                HorizontalDivider(
+                    color = NeutralBorder,
+                    thickness = 0.5.dp
+                )
+                Spacer(Modifier.height(16.dp))
 
                 // Content field
                 BasicTextField(
                     value = uiState.content,
                     onValueChange = viewModel::onContentChanged,
                     textStyle = TextStyle(
-                        fontSize = 16.sp,
-                        lineHeight = 26.sp,
-                        color = MaterialTheme.colorScheme.onBackground
+                        fontSize     = 16.sp,
+                        lineHeight   = 27.sp,
+                        color        = NeutralText,
+                        letterSpacing = 0.1.sp
                     ),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    cursorBrush = SolidColor(Violet),
                     decorationBox = { inner ->
                         if (uiState.content.isEmpty()) {
                             Text(
                                 "Start writing…",
                                 style = TextStyle(
-                                    fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.35f)
+                                    fontSize     = 16.sp,
+                                    lineHeight   = 27.sp,
+                                    color        = NeutralMuted,
+                                    letterSpacing = 0.1.sp
                                 )
                             )
                         }
@@ -146,6 +211,8 @@ fun NoteEditorScreen(
                         .fillMaxWidth()
                         .heightIn(min = 300.dp)
                 )
+
+                Spacer(Modifier.height(32.dp))
             }
 
             uiState.error?.let { error ->
@@ -153,27 +220,35 @@ fun NoteEditorScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(16.dp),
+                    containerColor      = BgElevated,
+                    contentColor        = NeutralWhite,
+                    actionContentColor  = VioletLight,
                     action = { TextButton(onClick = viewModel::clearError) { Text("OK") } }
                 ) { Text(error) }
             }
         }
     }
 
+    // Delete confirmation dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
+            containerColor = BgElevated,
+            titleContentColor = NeutralWhite,
+            textContentColor = NeutralText,
             title = { Text("Delete Note?") },
             text = { Text("This will permanently delete the note from all devices.") },
             confirmButton = {
                 TextButton(
                     onClick = { showDeleteDialog = false; viewModel.delete(onBack) },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
+                    colors = ButtonDefaults.textButtonColors(contentColor = StatusRed)
                 ) { Text("Delete") }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+                TextButton(
+                    onClick = { showDeleteDialog = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = NeutralText)
+                ) { Text("Cancel") }
             }
         )
     }

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark background used by the window before Compose draws its first frame -->
+    <color name="bg_base">#FF0C0C14</color>
+</resources>

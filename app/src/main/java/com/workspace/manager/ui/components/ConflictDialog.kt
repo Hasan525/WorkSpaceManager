@@ -10,12 +10,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.workspace.manager.domain.model.ConflictInfo
 import com.workspace.manager.domain.model.ConflictResolution
-import com.workspace.manager.ui.theme.ConflictRed
+import com.workspace.manager.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -25,87 +27,112 @@ fun ConflictDialog(
     onResolve: (ConflictResolution) -> Unit,
     onDismiss: () -> Unit
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 8.dp
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .background(BgElevated, RoundedCornerShape(20.dp))
+                .padding(24.dp)
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                // Header
+            Column {
+                // ── Header ────────────────────────────────────────────────────
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = ConflictRed,
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        text = "Conflict Detected",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = ConflictRed
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(StatusRed.copy(alpha = 0.15f), RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = StatusRed,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column {
+                        Text(
+                            text = "Conflict Detected",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = NeutralWhite
+                        )
+                        Text(
+                            text = "Choose which version to keep",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = NeutralText
+                        )
+                    }
                 }
 
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    text = "This note was modified both locally and remotely. Choose which version to keep.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-
+                Spacer(Modifier.height(20.dp))
+                HorizontalDivider(color = NeutralBorder)
                 Spacer(Modifier.height(20.dp))
 
-                // Local version
+                // ── Version cards ─────────────────────────────────────────────
                 VersionCard(
-                    label = "📱 Local Version",
+                    label = "📱  Local Version",
+                    labelColor = Violet,
                     content = conflict.localContent,
                     timestamp = conflict.localUpdatedAt,
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                    bgColor = VioletDeep.copy(alpha = 0.5f)
                 )
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(10.dp))
 
-                // Remote version
                 VersionCard(
-                    label = "☁️ Remote Version",
+                    label = "☁️  Remote Version",
+                    labelColor = Mint,
                     content = conflict.remoteContent,
                     timestamp = conflict.remoteUpdatedAt,
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    bgColor = MintDeep.copy(alpha = 0.5f)
                 )
 
                 Spacer(Modifier.height(24.dp))
 
-                // Action buttons
-                Column(
+                // ── Action buttons ────────────────────────────────────────────
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    // Keep Remote
+                    OutlinedButton(
+                        onClick = { onResolve(ConflictResolution.KEEP_REMOTE) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Mint),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Mint.copy(alpha = 0.5f))
                     ) {
-                        OutlinedButton(
-                            onClick = { onResolve(ConflictResolution.KEEP_REMOTE) },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Keep Remote")
-                        }
-                        Button(
-                            onClick = { onResolve(ConflictResolution.KEEP_LOCAL) },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Text("Keep Local")
-                        }
+                        Text("Keep Remote", style = MaterialTheme.typography.labelLarge)
                     }
-                    FilledTonalButton(
-                        onClick = { onResolve(ConflictResolution.MERGE) },
-                        modifier = Modifier.fillMaxWidth()
+
+                    // Keep Local
+                    Button(
+                        onClick = { onResolve(ConflictResolution.KEEP_LOCAL) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Violet,
+                            contentColor   = NeutralWhite
+                        )
                     ) {
-                        Text("🔀 Merge Both Versions")
+                        Text("Keep Local", style = MaterialTheme.typography.labelLarge)
                     }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                // Merge — full-width
+                FilledTonalButton(
+                    onClick = { onResolve(ConflictResolution.MERGE) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = BgHighlight,
+                        contentColor   = NeutralText
+                    )
+                ) {
+                    Text("🔀  Merge Both Versions", style = MaterialTheme.typography.labelLarge)
                 }
             }
         }
@@ -115,35 +142,38 @@ fun ConflictDialog(
 @Composable
 private fun VersionCard(
     label: String,
+    labelColor: Color,
     content: String,
     timestamp: Long,
-    containerColor: androidx.compose.ui.graphics.Color
+    bgColor: Color
 ) {
     val sdf = remember { SimpleDateFormat("MMM d, HH:mm:ss", Locale.getDefault()) }
     val formatted = remember(timestamp) { sdf.format(Date(timestamp)) }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(containerColor, RoundedCornerShape(12.dp))
-            .padding(12.dp)
+            .background(bgColor, RoundedCornerShape(12.dp))
+            .padding(14.dp)
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            style = MaterialTheme.typography.labelMedium,
+            color = labelColor
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(6.dp))
         Text(
             text = content.ifBlank { "(empty)" },
             style = MaterialTheme.typography.bodyMedium,
+            color = NeutralWhite,
             maxLines = 4,
             overflow = TextOverflow.Ellipsis
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(6.dp))
         Text(
             text = formatted,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+            color = NeutralMuted
         )
     }
 }
