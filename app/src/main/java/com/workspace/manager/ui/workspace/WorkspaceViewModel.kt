@@ -1,6 +1,8 @@
 package com.workspace.manager.ui.workspace
 
 import android.net.Uri
+import android.view.DragAndDropPermissions
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.workspace.manager.data.local.NetworkConnectivityObserver
@@ -16,6 +18,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class WorkspaceViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val getWorkspaceItems: GetWorkspaceItemsUseCase,
     private val saveNote: SaveNoteUseCase,
     private val deleteNote: DeleteNoteUseCase,
@@ -27,7 +30,13 @@ class WorkspaceViewModel @Inject constructor(
     private val networkObserver: NetworkConnectivityObserver
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(WorkspaceUiState())
+    companion object {
+        private const val KEY_SELECTED_ASSET = "selectedAssetId"
+    }
+
+    private val _uiState = MutableStateFlow(
+        WorkspaceUiState(selectedAssetId = savedStateHandle[KEY_SELECTED_ASSET])
+    )
     val uiState: StateFlow<WorkspaceUiState> = _uiState.asStateFlow()
 
     init {
@@ -88,12 +97,14 @@ class WorkspaceViewModel @Inject constructor(
         }
     }
 
-    fun pickImage(uri: Uri) {
+    fun pickImage(uri: Uri, permissions: DragAndDropPermissions? = null) {
         viewModelScope.launch {
             try {
                 uploadAsset(uri)
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = "Failed to add image: ${e.message}") }
+            } finally {
+                permissions?.release()
             }
         }
     }
@@ -101,17 +112,20 @@ class WorkspaceViewModel @Inject constructor(
     fun toggleAssetSelection(id: String) {
         _uiState.update {
             val next = if (it.selectedAssetId == id) null else id
+            savedStateHandle[KEY_SELECTED_ASSET] = next
             it.copy(selectedAssetId = next)
         }
     }
 
     fun clearAssetSelection() {
         if (_uiState.value.selectedAssetId != null) {
+            savedStateHandle[KEY_SELECTED_ASSET] = null
             _uiState.update { it.copy(selectedAssetId = null) }
         }
     }
 
     fun onDragStart(itemId: String) {
+        savedStateHandle[KEY_SELECTED_ASSET] = null
         _uiState.update { it.copy(draggedItemId = itemId, selectedAssetId = null) }
     }
 

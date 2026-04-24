@@ -37,6 +37,8 @@ class NoteEditorViewModel @Inject constructor(
         const val KEY_TITLE = "draftTitle"
         const val KEY_CONTENT = "draftContent"
         private const val MIN_SAVE_FEEDBACK_MS = 600L
+        const val MAX_TITLE_LENGTH = 100
+        const val MAX_CONTENT_LENGTH = 50_000
     }
 
     private val noteId: String? = savedStateHandle[KEY_NOTE_ID]
@@ -78,13 +80,15 @@ class NoteEditorViewModel @Inject constructor(
     }
 
     fun onTitleChanged(value: String) {
-        _uiState.update { it.copy(title = value) }
-        _savedState[KEY_TITLE] = value
+        val capped = if (value.length > MAX_TITLE_LENGTH) value.take(MAX_TITLE_LENGTH) else value
+        _uiState.update { it.copy(title = capped) }
+        _savedState[KEY_TITLE] = capped
     }
 
     fun onContentChanged(value: String) {
-        _uiState.update { it.copy(content = value) }
-        _savedState[KEY_CONTENT] = value
+        val capped = if (value.length > MAX_CONTENT_LENGTH) value.take(MAX_CONTENT_LENGTH) else value
+        _uiState.update { it.copy(content = capped) }
+        _savedState[KEY_CONTENT] = capped
     }
 
     fun save() {
