@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -121,7 +122,7 @@ fun WorkspaceScreen(
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
                     color = Forest,
-                    strokeWidth = 2.5.dp
+                    strokeWidth = Dim.BorderThick
                 )
             }
 
@@ -530,7 +531,8 @@ private fun EmptyWorkspaceHint(modifier: Modifier = Modifier) {
         Text(
             text = "Tap the button below to start a note or add an image from your gallery.",
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
+            color = TextSecondary,
+            textAlign = TextAlign.Center
         )
     }
 }

@@ -173,7 +173,7 @@ fun ImageAssetTile(
                 Box(
                     modifier = Modifier
                         .padding(Dim.Space8)
-                        .size(36.dp)
+                        .size(Dim.MiniFabSize)
                         .clip(CircleShape)
                         .background(StatusRed)
                         .clickable(onClick = onDeleteRequested),

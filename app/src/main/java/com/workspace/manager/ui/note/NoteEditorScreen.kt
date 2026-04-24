@@ -126,7 +126,8 @@ fun NoteEditorScreen(
                 Snackbar(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(Dim.Space16),
+                        .padding(Dim.Space16)
+                        .navigationBarsPadding(),
                     containerColor      = BgElevated,
                     contentColor        = TextPrimary,
                     actionContentColor  = ForestLight,

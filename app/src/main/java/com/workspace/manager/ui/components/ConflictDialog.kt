@@ -146,7 +146,7 @@ private fun VersionCard(
     timestamp: Long
 ) {
     val formatted = remember(timestamp) {
-        SimpleDateFormat("MMM d · HH:mm:ss", Locale.getDefault()).format(Date(timestamp))
+        SimpleDateFormat("MMM d · HH:mm", Locale.getDefault()).format(Date(timestamp))
     }
 
     Column(
