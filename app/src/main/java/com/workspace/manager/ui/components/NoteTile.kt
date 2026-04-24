@@ -3,6 +3,7 @@ package com.workspace.manager.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,11 +17,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.workspace.manager.domain.model.Note
 import com.workspace.manager.ui.theme.*
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlin.math.abs
 
 @Composable
 fun NoteTile(
@@ -28,96 +31,75 @@ fun NoteTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Pick a consistent accent colour for this note using its id hash
     val accentColor = remember(note.id) {
-        NoteAccentColors[Math.abs(note.id.hashCode()) % NoteAccentColors.size]
+        NoteAccentColors[abs(note.id.hashCode()) % NoteAccentColors.size]
     }
 
     val borderColor by animateColorAsState(
         targetValue = when {
-            note.isConflicted -> StatusRed
-            note.isPendingSync -> StatusAmber
-            else -> NeutralBorder
+            note.isConflicted -> StatusRed.copy(alpha = 0.55f)
+            note.isPendingSync -> StatusAmber.copy(alpha = 0.45f)
+            else              -> BorderSubtle
         },
         animationSpec = tween(300),
         label = "borderColor"
     )
 
-    Box(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(Dim.RadiusLg))
             .background(BgSurface)
+            .border(Dim.BorderThin, borderColor, RoundedCornerShape(Dim.RadiusLg))
             .clickable { onClick() }
+            .padding(Dim.Space16)
     ) {
-        // Left accent strip
-        Box(
-            modifier = Modifier
-                .width(4.dp)
-                .fillMaxHeight()
-                .background(accentColor, RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
-        )
-
-        // Status border glow — drawn as a subtle outline when conflicted / syncing
-        if (note.isConflicted || note.isPendingSync) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Box(
                 modifier = Modifier
-                    .matchParentSize()
-                    .background(
-                        borderColor.copy(alpha = 0.06f),
-                        RoundedCornerShape(16.dp)
-                    )
+                    .size(Dim.Space8)
+                    .background(accentColor, RoundedCornerShape(Dim.Space2))
             )
+            if (note.isConflicted || note.isPendingSync) {
+                StatusChip(isConflicted = note.isConflicted)
+            }
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 14.dp, top = 14.dp, bottom = 12.dp)
-        ) {
-            // Title row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = note.title.ifBlank { "Untitled Note" },
-                    style = MaterialTheme.typography.titleMedium,
-                    color = NeutralWhite,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                if (note.isConflicted || note.isPendingSync) {
-                    Spacer(Modifier.width(8.dp))
-                    StatusChip(isConflicted = note.isConflicted)
-                }
-            }
+        Spacer(Modifier.height(Dim.Space12))
 
-            // Content preview
-            if (note.content.isNotBlank()) {
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = note.content,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = NeutralText,
-                    maxLines = 4,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+        Text(
+            text = note.title.ifBlank { "Untitled" },
+            style = MaterialTheme.typography.titleMedium,
+            color = TextPrimary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
 
-            Spacer(Modifier.height(10.dp))
-
-            // Footer — timestamp
-            val sdf = remember { java.text.SimpleDateFormat("MMM d, HH:mm", java.util.Locale.getDefault()) }
-            val formattedTime = remember(note.updatedAt) { sdf.format(java.util.Date(note.updatedAt)) }
+        if (note.content.isNotBlank()) {
+            Spacer(Modifier.height(Dim.Space6))
             Text(
-                text = formattedTime,
-                style = MaterialTheme.typography.labelSmall,
-                color = NeutralMuted
+                text = note.content,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis
             )
         }
+
+        Spacer(Modifier.height(Dim.Space12))
+
+        val formattedTime = remember(note.updatedAt) {
+            SimpleDateFormat("MMM d · HH:mm", Locale.getDefault()).format(Date(note.updatedAt))
+        }
+        Text(
+            text = formattedTime,
+            style = MaterialTheme.typography.labelSmall,
+            color = TextMuted
+        )
     }
 }
 
@@ -125,20 +107,20 @@ fun NoteTile(
 private fun StatusChip(isConflicted: Boolean) {
     val chipColor = if (isConflicted) StatusRed else StatusAmber
     val chipIcon  = if (isConflicted) Icons.Default.Warning else Icons.Default.Sync
-    val chipLabel = if (isConflicted) "Conflict" else "Sync"
+    val chipLabel = if (isConflicted) "Conflict" else "Syncing"
 
     Row(
         modifier = Modifier
-            .background(chipColor.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
-            .padding(horizontal = 6.dp, vertical = 3.dp),
+            .background(chipColor.copy(alpha = 0.12f), RoundedCornerShape(Dim.RadiusXs))
+            .padding(horizontal = Dim.Space6, vertical = Dim.Space4),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(3.dp)
+        horizontalArrangement = Arrangement.spacedBy(Dim.Space4)
     ) {
         Icon(
             imageVector = chipIcon,
             contentDescription = chipLabel,
             tint = chipColor,
-            modifier = Modifier.size(12.dp)
+            modifier = Modifier.size(Dim.IconXs)
         )
         Text(
             text = chipLabel,

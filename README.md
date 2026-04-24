@@ -1,4 +1,4 @@
-# Workspace Manager
+de# Workspace Manager
 
 A **local-first, real-time collaborative note-taking Android app** built with Kotlin + Jetpack Compose + Firebase.
 

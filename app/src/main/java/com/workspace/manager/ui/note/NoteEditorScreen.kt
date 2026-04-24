@@ -3,13 +3,14 @@ package com.workspace.manager.ui.note
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,102 +34,38 @@ fun NoteEditorScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    // Auto-navigate back after saving a new note (noteId == null means new note)
     LaunchedEffect(uiState.isSaved) {
         if (uiState.isSaved && noteId == null) onBack()
     }
 
-    // Word count derived from content
     val wordCount = remember(uiState.content) {
         uiState.content.trim().split("\\s+".toRegex()).filter { it.isNotEmpty() }.size
     }
+    val charCount = uiState.content.length
 
     Scaffold(
         containerColor = BgBase,
+        contentWindowInsets = WindowInsets(0),
         topBar = {
-            TopAppBar(
-                title = { },    // title area left clear — content speaks for itself
-                navigationIcon = {
-                    IconButton(onClick = {
-                        // Auto-save on back if the note has any content
-                        if (uiState.title.isNotBlank() || uiState.content.isNotBlank()) {
-                            viewModel.save()
-                        }
-                        onBack()
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = NeutralText
-                        )
+            EditorTopBar(
+                isSaving = uiState.isSaving,
+                showDelete = noteId != null,
+                onBack = {
+                    if (uiState.title.isNotBlank() || uiState.content.isNotBlank()) {
+                        viewModel.save()
                     }
+                    onBack()
                 },
-                actions = {
-                    if (noteId != null) {
-                        IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                tint = StatusRed.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                    // Save button / spinner
-                    Box(
-                        modifier = Modifier.padding(end = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (uiState.isSaving) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = Violet,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            IconButton(onClick = viewModel::save) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(34.dp)
-                                        .background(Violet, RoundedCornerShape(10.dp)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        Icons.Default.Check,
-                                        contentDescription = "Save",
-                                        tint = NeutralWhite,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BgBase
-                )
+                onSave = viewModel::save,
+                onDelete = { showDeleteDialog = true }
             )
         },
         bottomBar = {
-            // Minimal footer — word count + status label
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(BgSurface)
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "$wordCount ${if (wordCount == 1) "word" else "words"}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = NeutralMuted
-                )
-                Text(
-                    text = if (noteId == null) "New Note" else "Editing",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = NeutralMuted
-                )
-            }
+            EditorStatusBar(
+                wordCount = wordCount,
+                charCount = charCount,
+                isNew = noteId == null
+            )
         }
     ) { padding ->
         Box(
@@ -136,37 +73,40 @@ fun NoteEditorScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .background(BgBase)
+                .imePadding()
         ) {
+            // Centred reading column — caps line length on tablets, full width on phones
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp)
+                    .widthIn(max = Dim.ContentMaxWidth)
+                    .align(Alignment.TopCenter)
+                    .padding(horizontal = Dim.ScreenEdge)
                     .verticalScroll(rememberScrollState())
             ) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Dim.Space8))
 
-                // Title field — large, prominent
                 BasicTextField(
                     value = uiState.title,
                     onValueChange = viewModel::onTitleChanged,
                     textStyle = TextStyle(
-                        fontSize     = 28.sp,
-                        fontWeight   = FontWeight.Bold,
-                        color        = NeutralWhite,
-                        lineHeight   = 36.sp,
-                        letterSpacing = (-0.3).sp
+                        fontSize      = 32.sp,
+                        fontWeight    = FontWeight.Medium,
+                        color         = TextPrimary,
+                        lineHeight    = 40.sp,
+                        letterSpacing = (-0.6).sp
                     ),
-                    cursorBrush = SolidColor(Violet),
+                    cursorBrush = SolidColor(Forest),
                     decorationBox = { inner ->
                         if (uiState.title.isEmpty()) {
                             Text(
-                                "Title…",
+                                "Untitled",
                                 style = TextStyle(
-                                    fontSize     = 28.sp,
-                                    fontWeight   = FontWeight.Bold,
-                                    color        = NeutralMuted,
-                                    lineHeight   = 36.sp,
-                                    letterSpacing = (-0.3).sp
+                                    fontSize      = 32.sp,
+                                    fontWeight    = FontWeight.Medium,
+                                    color         = TextMuted,
+                                    lineHeight    = 40.sp,
+                                    letterSpacing = (-0.6).sp
                                 )
                             )
                         }
@@ -175,69 +115,64 @@ fun NoteEditorScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(Modifier.height(6.dp))
-                HorizontalDivider(
-                    color = NeutralBorder,
-                    thickness = 0.5.dp
-                )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Dim.Space20))
 
-                // Content field
                 BasicTextField(
                     value = uiState.content,
                     onValueChange = viewModel::onContentChanged,
                     textStyle = TextStyle(
-                        fontSize     = 16.sp,
-                        lineHeight   = 27.sp,
-                        color        = NeutralText,
-                        letterSpacing = 0.1.sp
+                        fontSize      = 16.sp,
+                        lineHeight    = 28.sp,
+                        color         = TextSecondary,
+                        letterSpacing = 0.sp
                     ),
-                    cursorBrush = SolidColor(Violet),
+                    cursorBrush = SolidColor(Forest),
                     decorationBox = { inner ->
                         if (uiState.content.isEmpty()) {
                             Text(
                                 "Start writing…",
                                 style = TextStyle(
-                                    fontSize     = 16.sp,
-                                    lineHeight   = 27.sp,
-                                    color        = NeutralMuted,
-                                    letterSpacing = 0.1.sp
+                                    fontSize      = 16.sp,
+                                    lineHeight    = 28.sp,
+                                    color         = TextMuted
                                 )
                             )
                         }
                         inner()
                     },
+                    // Generous min height so the field is comfortably tappable; grows with content
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 300.dp)
+                        .defaultMinSize(minHeight = 280.dp)
                 )
 
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(Dim.Space40))
             }
 
             uiState.error?.let { error ->
                 Snackbar(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(16.dp),
+                        .padding(Dim.Space16),
                     containerColor      = BgElevated,
-                    contentColor        = NeutralWhite,
-                    actionContentColor  = VioletLight,
+                    contentColor        = TextPrimary,
+                    actionContentColor  = ForestLight,
+                    shape               = RoundedCornerShape(Dim.RadiusMd),
                     action = { TextButton(onClick = viewModel::clearError) { Text("OK") } }
                 ) { Text(error) }
             }
         }
     }
 
-    // Delete confirmation dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             containerColor = BgElevated,
-            titleContentColor = NeutralWhite,
-            textContentColor = NeutralText,
-            title = { Text("Delete Note?") },
-            text = { Text("This will permanently delete the note from all devices.") },
+            titleContentColor = TextPrimary,
+            textContentColor = TextSecondary,
+            shape = RoundedCornerShape(Dim.RadiusXl),
+            title = { Text("Delete this note?") },
+            text = { Text("This will permanently remove the note from all devices.") },
             confirmButton = {
                 TextButton(
                     onClick = { showDeleteDialog = false; viewModel.delete(onBack) },
@@ -247,9 +182,135 @@ fun NoteEditorScreen(
             dismissButton = {
                 TextButton(
                     onClick = { showDeleteDialog = false },
-                    colors = ButtonDefaults.textButtonColors(contentColor = NeutralText)
+                    colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)
                 ) { Text("Cancel") }
             }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditorTopBar(
+    isSaving: Boolean,
+    showDelete: Boolean,
+    onBack: () -> Unit,
+    onSave: () -> Unit,
+    onDelete: () -> Unit
+) {
+    TopAppBar(
+        title = { },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = TextSecondary
+                )
+            }
+        },
+        actions = {
+            if (showDelete) {
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.DeleteOutline,
+                        contentDescription = "Delete",
+                        tint = TextMuted
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier.padding(end = Dim.Space12),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dim.IconMd),
+                        color = Forest,
+                        strokeWidth = Dim.BorderThick
+                    )
+                } else {
+                    IconButton(onClick = onSave) {
+                        Box(
+                            modifier = Modifier
+                                .size(Dim.SaveBtnSize)
+                                .background(Forest, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = "Save",
+                                tint = TextPrimary,
+                                modifier = Modifier.size(Dim.IconSm)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = BgBase
+        ),
+        windowInsets = TopAppBarDefaults.windowInsets
+    )
+}
+
+@Composable
+private fun EditorStatusBar(
+    wordCount: Int,
+    charCount: Int,
+    isNew: Boolean
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BgBase)
+            .navigationBarsPadding()
+    ) {
+        HorizontalDivider(color = BorderSubtle, thickness = Dim.BorderHair)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dim.ScreenEdge, vertical = Dim.Space12),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dim.Space12)
+            ) {
+                StatusItem(value = wordCount.toString(), label = if (wordCount == 1) "word" else "words")
+                Box(
+                    modifier = Modifier
+                        .size(Dim.Space2 + Dim.Space2)   // 4dp dot
+                        .background(TextMuted, CircleShape)
+                )
+                StatusItem(value = charCount.toString(), label = if (charCount == 1) "char" else "chars")
+            }
+            Text(
+                text = if (isNew) "Draft" else "Editing",
+                style = MaterialTheme.typography.labelSmall,
+                color = ForestLight
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatusItem(value: String, label: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dim.Space4)
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelMedium,
+            color = TextSecondary
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = TextMuted
         )
     }
 }

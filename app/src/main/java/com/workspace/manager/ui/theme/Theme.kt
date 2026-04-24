@@ -1,37 +1,41 @@
 package com.workspace.manager.ui.theme
 
 import android.app.Activity
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// Always-dark colour scheme — marketplace apps don't flip to light
 private val DarkColorScheme = darkColorScheme(
-    primary             = Violet,
-    onPrimary           = NeutralWhite,
-    primaryContainer    = VioletDeep,
-    onPrimaryContainer  = VioletLight,
-    secondary           = Mint,
-    onSecondary         = BgBase,
-    secondaryContainer  = MintDeep,
-    onSecondaryContainer= Mint,
-    background          = BgBase,
-    onBackground        = NeutralWhite,
-    surface             = BgSurface,
-    onSurface           = NeutralWhite,
-    surfaceVariant      = BgElevated,
-    onSurfaceVariant    = NeutralText,
-    outline             = NeutralBorder,
-    outlineVariant      = NeutralBorder,
-    error               = StatusRed,
-    onError             = NeutralWhite,
-    errorContainer      = Color(0xFF3B0D0D),
-    onErrorContainer    = StatusRed,
-    scrim               = BgBase
+    primary              = Forest,
+    onPrimary            = TextPrimary,
+    primaryContainer     = ForestDeep,
+    onPrimaryContainer   = ForestLight,
+    secondary            = ForestLight,
+    onSecondary          = BgBase,
+    secondaryContainer   = ForestDeep,
+    onSecondaryContainer = ForestLight,
+    tertiary             = TextSecondary,
+    onTertiary           = BgBase,
+    background           = BgBase,
+    onBackground         = TextPrimary,
+    surface              = BgSurface,
+    onSurface            = TextPrimary,
+    surfaceVariant       = BgElevated,
+    onSurfaceVariant     = TextSecondary,
+    surfaceTint          = Forest,
+    inverseSurface       = TextPrimary,
+    inverseOnSurface     = BgBase,
+    outline              = BorderStrong,
+    outlineVariant       = BorderSubtle,
+    error                = StatusRed,
+    onError              = TextPrimary,
+    errorContainer       = Color(0xFF3D0F11),
+    onErrorContainer     = StatusRed,
+    scrim                = Color(0xCC000000)
 )
 
 @Composable
@@ -39,9 +43,13 @@ fun WorkspaceTheme(content: @Composable () -> Unit) {
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
+            // Edge-to-edge: leave system bars transparent and let layout draw under them.
+            // Just enforce dark icons.
             val window = (view.context as Activity).window
-            window.statusBarColor = BgBase.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
+            }
         }
     }
     MaterialTheme(

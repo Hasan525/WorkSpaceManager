@@ -37,25 +37,24 @@ fun ImageAssetTile(
     var isSelected by remember { mutableStateOf(false) }
 
     val animatedRotation by animateFloatAsState(
-        targetValue = currentAngle,
+        targetValue   = currentAngle,
         animationSpec = spring(dampingRatio = 0.8f),
-        label = "rotation"
+        label         = "rotation"
     )
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(Dim.RadiusLg))
             .background(BgSurface)
             .border(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) Violet else NeutralBorder,
-                shape = RoundedCornerShape(16.dp)
+                width = Dim.BorderThin,
+                color = if (isSelected) Forest.copy(alpha = 0.7f) else BorderSubtle,
+                shape = RoundedCornerShape(Dim.RadiusLg)
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Full-bleed image with rotation
         AsyncImage(
             model = asset.localUri ?: asset.downloadUrl,
             contentDescription = "Asset Image",
@@ -68,57 +67,37 @@ fun ImageAssetTile(
                         awaitFirstDown(requireUnconsumed = false)
 
                         var prevAngle = 0f
-                        var fingerCount = 0
-                        var prevFingerCount = 0  // tracks transitions to reset prevAngle
+                        var fingerCount: Int
+                        var prevFingerCount = 0
 
                         do {
                             val event = awaitPointerEvent()
                             val pressed = event.changes.filter { it.pressed }
                             fingerCount = pressed.size
 
-                            // Reset prevAngle when entering rotation mode from
-                            // single-finger (or zero-finger) state.  Without this
-                            // the first delta would be computed against a stale
-                            // angle causing an unwanted rotation jump.
+                            // Reset rotation reference when entering 2+ finger mode
                             if (fingerCount >= 2 && prevFingerCount < 2) {
                                 prevAngle = 0f
                             }
                             prevFingerCount = fingerCount
 
+                            // Only consume when we actually own the gesture (2+ fingers = rotation).
+                            // Single-finger touches pass through so the parent grid can scroll
+                            // and the long-press drag-reorder can fire.
                             when {
-                                fingerCount == 1 -> {
-                                    // Finger 1: select / focus
-                                    isSelected = true
-                                    showHUD = false
-                                    pressed.forEach { it.consume() }
-                                }
-
                                 fingerCount == 2 -> {
-                                    // Finger 2: rotation transformation (no HUD yet)
                                     isSelected = true
-                                    val angle = angleBetween(
-                                        pressed[0].position,
-                                        pressed[1].position
-                                    )
-                                    if (prevAngle != 0f) {
-                                        currentAngle += angle - prevAngle
-                                    }
+                                    val angle = angleBetween(pressed[0].position, pressed[1].position)
+                                    if (prevAngle != 0f) currentAngle += angle - prevAngle
                                     prevAngle = angle
                                     hudAngle = currentAngle
                                     showHUD = false
                                     pressed.forEach { it.consume() }
                                 }
-
                                 fingerCount >= 3 -> {
-                                    // Finger 3: continue rotation AND display HUD
                                     isSelected = true
-                                    val angle = angleBetween(
-                                        pressed[0].position,
-                                        pressed[1].position
-                                    )
-                                    if (prevAngle != 0f) {
-                                        currentAngle += angle - prevAngle
-                                    }
+                                    val angle = angleBetween(pressed[0].position, pressed[1].position)
+                                    if (prevAngle != 0f) currentAngle += angle - prevAngle
                                     prevAngle = angle
                                     hudAngle = currentAngle
                                     showHUD = true
@@ -127,43 +106,37 @@ fun ImageAssetTile(
                             }
                         } while (pressed.any { it.pressed })
 
-                        // Gesture ended — persist final angle and hide HUD
                         showHUD = false
                         isSelected = false
-                        if (fingerCount >= 2) {
-                            onRotationChanged(currentAngle)
-                        }
+                        if (fingerCount >= 2) onRotationChanged(currentAngle)
                     }
                 }
         )
 
-        // Gradient scrim at bottom — ensures badges / HUD are always readable
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
+                .height(72.dp)
                 .align(Alignment.BottomCenter)
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color(0xCC0C0C14))
+                        colors = listOf(Color.Transparent, Color(0xCC0A0A0A))
                     )
                 )
         )
 
-        // Selection glow ring (violet when selected)
         if (isSelected) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .border(
-                        width = 2.dp,
-                        color = VioletGlow,
-                        shape = RoundedCornerShape(16.dp)
+                        width = Dim.BorderThick,
+                        color = ForestGlow,
+                        shape = RoundedCornerShape(Dim.RadiusLg)
                     )
             )
         }
 
-        // Rotation HUD — top-end corner
         if (showHUD) {
             RotationHUD(
                 angleDegrees = hudAngle,
@@ -171,23 +144,20 @@ fun ImageAssetTile(
             )
         }
 
-        // Pending-sync badge — bottom-start corner
         if (asset.isPendingSync) {
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(8.dp)
-                    .background(
-                        StatusAmber.copy(alpha = 0.18f),
-                        RoundedCornerShape(8.dp)
-                    )
-                    .padding(horizontal = 7.dp, vertical = 3.dp),
+                    .padding(Dim.Space8)
+                    .background(StatusAmber.copy(alpha = 0.15f), RoundedCornerShape(Dim.RadiusSm))
+                    .padding(horizontal = Dim.Space8, vertical = Dim.Space4),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(Dim.Space6)
             ) {
-                Text(
-                    text = "⏳",
-                    style = MaterialTheme.typography.labelSmall
+                Box(
+                    modifier = Modifier
+                        .size(Dim.Space6)
+                        .background(StatusAmber, RoundedCornerShape(Dim.Space2))
                 )
                 Text(
                     text = "Syncing",

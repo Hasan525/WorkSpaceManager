@@ -2,46 +2,59 @@ package com.workspace.manager.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// ── Background layers ──────────────────────────────────────────────────────────
-val BgBase      = Color(0xFF0C0C14)   // main screen background (near-black)
-val BgSurface   = Color(0xFF13131E)   // card / bottom-sheet surface
-val BgElevated  = Color(0xFF1B1B29)   // dialogs / menus
-val BgHighlight = Color(0xFF252538)   // hover, selected row, input focus
+// Backgrounds — true neutral charcoal stack
+val BgBase      = Color(0xFF0A0A0A)
+val BgSurface   = Color(0xFF141414)
+val BgElevated  = Color(0xFF1C1C1C)
+val BgHighlight = Color(0xFF242424)
 
-// ── Primary — electric violet ──────────────────────────────────────────────────
-val Violet      = Color(0xFF7C3AED)   // primary actions, FAB
-val VioletLight = Color(0xFF9D5CF6)   // lighter variant (icons on dark bg)
-val VioletDeep  = Color(0xFF2E1065)   // primaryContainer
-val VioletGlow  = Color(0x337C3AED)   // alpha glow for selection rings
+// Accent — deep forest teal (#285A48) system
+val Forest      = Color(0xFF285A48)   // primary accent — the requested deep forest teal
+val ForestLight = Color(0xFF3D7E63)   // lighter forest-teal, same hue family — for small icons/text where #285A48 lacks contrast on dark bg
+val ForestDeep  = Color(0xFF12302A)   // primaryContainer / pressed states — darker, slightly more teal
+val ForestGlow  = Color(0x40285A48)   // selection rings, focus halos (alpha of primary)
 
-// ── Secondary — neon mint ─────────────────────────────────────────────────────
-val Mint        = Color(0xFF10B981)   // secondary accent, sync indicator
-val MintDeep    = Color(0xFF064E3B)   // secondaryContainer
+// Borders — alpha-based for depth without color shifts
+val BorderSubtle = Color(0x12FFFFFF)
+val BorderStrong = Color(0x1FFFFFFF)
 
-// ── Neutrals ──────────────────────────────────────────────────────────────────
-val NeutralWhite  = Color(0xFFF8F8FF) // primary text on dark
-val NeutralText   = Color(0xFFB4B4CC) // secondary / body text
-val NeutralMuted  = Color(0xFF565678) // placeholder, timestamps
-val NeutralBorder = Color(0xFF1F2039) // card borders, dividers
+// Text
+val TextPrimary   = Color(0xFFF5F5F4)
+val TextSecondary = Color(0xFFA1A1AA)
+val TextMuted     = Color(0xFF52525B)
 
-// ── Status ────────────────────────────────────────────────────────────────────
-val StatusRed   = Color(0xFFEF4444)   // error / conflict
-val StatusAmber = Color(0xFFF59E0B)   // pending sync / offline
-val StatusGreen = Color(0xFF22C55E)   // online / success
+// Status — calibrated to sit alongside forest teal without clashing
+val StatusRed   = Color(0xFFE5484D)
+val StatusAmber = Color(0xFFE0A12C)
+val StatusGreen = Color(0xFF3D7E63)   // forest-leaning success — same family as accent
 
-// ── Semantic aliases (kept for backward-compat with existing callers) ─────────
+// Backward-compat aliases — old code still references these
+val NeutralWhite  = TextPrimary
+val NeutralText   = TextSecondary
+val NeutralMuted  = TextMuted
+val NeutralBorder = BorderSubtle
+val Olive         = Forest
+val OliveBright   = ForestLight
+val OliveDeep     = ForestDeep
+val OliveGlow     = ForestGlow
+val Violet        = Forest
+val VioletLight   = ForestLight
+val VioletDeep    = ForestDeep
+val VioletGlow    = ForestGlow
+val Mint          = ForestLight
+val MintDeep      = ForestDeep
 val ConflictRed   = StatusRed
 val SyncGreen     = StatusGreen
 val OfflineOrange = StatusAmber
 
-// ── Per-note accent strip colours (chosen by note.id.hashCode()) ──────────────
+// Per-note accent strip — cool forest/teal family only
 val NoteAccentColors = listOf(
-    Color(0xFF7C3AED), // violet
-    Color(0xFF2563EB), // blue
-    Color(0xFF0891B2), // cyan
-    Color(0xFF059669), // emerald
-    Color(0xFF65A30D), // lime
-    Color(0xFFD97706), // amber
-    Color(0xFFDB2777), // pink
-    Color(0xFFDC2626)  // red
+    Color(0xFF285A48), // forest teal (primary)
+    Color(0xFF3D7E63), // light forest
+    Color(0xFF1F4A3A), // deeper forest
+    Color(0xFF2D6660), // forest-teal blend
+    Color(0xFF1F5050), // deep teal
+    Color(0xFF45726B), // muted teal
+    Color(0xFF3F6B8C), // slate blue (cool complement)
+    Color(0xFF5A6B7A)  // cool gray-blue (near-neutral)
 )

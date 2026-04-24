@@ -4,7 +4,7 @@
             "outputFile": "com.workspace.manager.app-mergeDebugResources-73:/values-v23/values-v23.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\rahma\\.gradle\\caches\\transforms-4\\761a1f897fb2236010bdfd4f868ddf79\\transformed\\work-runtime-2.9.0\\res\\values-v23\\values-v23.xml",
+                    "source": "C:\\Users\\Polash\\.gradle\\caches\\transforms-4\\761a1f897fb2236010bdfd4f868ddf79\\transformed\\work-runtime-2.9.0\\res\\values-v23\\values-v23.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",

@@ -423,15 +423,15 @@ public final class DaggerWorkspaceApp_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_workspace_manager_ui_note_NoteEditorViewModel = "com.workspace.manager.ui.note.NoteEditorViewModel";
-
       static String com_workspace_manager_ui_workspace_WorkspaceViewModel = "com.workspace.manager.ui.workspace.WorkspaceViewModel";
 
-      @KeepFieldType
-      NoteEditorViewModel com_workspace_manager_ui_note_NoteEditorViewModel2;
+      static String com_workspace_manager_ui_note_NoteEditorViewModel = "com.workspace.manager.ui.note.NoteEditorViewModel";
 
       @KeepFieldType
       WorkspaceViewModel com_workspace_manager_ui_workspace_WorkspaceViewModel2;
+
+      @KeepFieldType
+      NoteEditorViewModel com_workspace_manager_ui_note_NoteEditorViewModel2;
     }
   }
 
