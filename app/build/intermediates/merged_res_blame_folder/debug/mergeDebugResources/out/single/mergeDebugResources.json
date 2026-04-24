@@ -1,0 +1,62 @@
+[
+    {
+        "merged": "com.workspace.manager.app-debug-75:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.workspace.manager.app-main-77:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "C:\\Users\\rahma\\.gradle\\daemon\\8.6\\com.workspace.manager.app-debug-75:\\xml_file_paths.xml.flat",
+        "source": "C:\\Users\\rahma\\.gradle\\daemon\\8.6\\com.workspace.manager.app-main-77:\\xml\\file_paths.xml"
+    },
+    {
+        "merged": "com.workspace.manager.app-debug-75:/mipmap-mdpi_ic_launcher.xml.flat",
+        "source": "com.workspace.manager.app-main-77:/mipmap-mdpi/ic_launcher.xml"
+    },
+    {
+        "merged": "com.workspace.manager.app-debug-75:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.workspace.manager.app-main-77:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.workspace.manager.app-debug-75:/mipmap-xxxhdpi_ic_launcher_round.xml.flat",
+        "source": "com.workspace.manager.app-main-77:/mipmap-xxxhdpi/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.workspace.manager.app-debug-75:/mipmap-hdpi_ic_launcher.xml.flat",
+        "source": "com.workspace.manager.app-main-77:/mipmap-hdpi/ic_launcher.xml"
+    },
+    {
+        "merged": "com.workspace.manager.app-debug-75:/mipmap-hdpi_ic_launcher_round.xml.flat",
+        "source": "com.workspace.manager.app-main-77:/mipmap-hdpi/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.workspace.manager.app-debug-75:/mipmap-xxhdpi_ic_launcher_round.xml.flat",
+        "source": "com.workspace.manager.app-main-77:/mipmap-xxhdpi/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.workspace.manager.app-debug-75:/mipmap-xhdpi_ic_launcher.xml.flat",
+        "source": "com.workspace.manager.app-main-77:/mipmap-xhdpi/ic_launcher.xml"
+    },
+    {
+        "merged": "com.workspace.manager.app-debug-75:/mipmap-xxhdpi_ic_launcher.xml.flat",
+        "source": "com.workspace.manager.app-main-77:/mipmap-xxhdpi/ic_launcher.xml"
+    },
+    {
+        "merged": "com.workspace.manager.app-debug-75:/mipmap-mdpi_ic_launcher_round.xml.flat",
+        "source": "com.workspace.manager.app-main-77:/mipmap-mdpi/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.workspace.manager.app-debug-75:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.workspace.manager.app-main-77:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.workspace.manager.app-debug-75:/mipmap-xhdpi_ic_launcher_round.xml.flat",
+        "source": "com.workspace.manager.app-main-77:/mipmap-xhdpi/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.workspace.manager.app-debug-75:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.workspace.manager.app-main-77:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.workspace.manager.app-debug-75:/mipmap-xxxhdpi_ic_launcher.xml.flat",
+        "source": "com.workspace.manager.app-main-77:/mipmap-xxxhdpi/ic_launcher.xml"
+    }
+]

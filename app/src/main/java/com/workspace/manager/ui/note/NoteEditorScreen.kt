@@ -5,7 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
@@ -29,7 +29,7 @@ fun NoteEditorScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    // Navigate back after save if it's a new note
+    // Auto-navigate back after saving a new note (noteId == null means new note)
     LaunchedEffect(uiState.isSaved) {
         if (uiState.isSaved && noteId == null) onBack()
     }
@@ -40,12 +40,16 @@ fun NoteEditorScreen(
                 title = { Text(if (noteId == null) "New Note" else "Edit Note") },
                 navigationIcon = {
                     IconButton(onClick = {
+                        // Auto-save on back if the note has any content
                         if (uiState.title.isNotBlank() || uiState.content.isNotBlank()) {
                             viewModel.save()
                         }
                         onBack()
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
                     }
                 },
                 actions = {
@@ -63,7 +67,10 @@ fun NoteEditorScreen(
                         enabled = !uiState.isSaving
                     ) {
                         if (uiState.isSaving) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
                         } else {
                             Icon(Icons.Default.Check, contentDescription = "Save")
                         }
@@ -98,7 +105,10 @@ fun NoteEditorScreen(
                         if (uiState.title.isEmpty()) {
                             Text(
                                 "Title…",
-                                style = TextStyle(fontSize = 26.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.35f))
+                                style = TextStyle(
+                                    fontSize = 26.sp,
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.35f)
+                                )
                             )
                         }
                         inner()
@@ -124,7 +134,10 @@ fun NoteEditorScreen(
                         if (uiState.content.isEmpty()) {
                             Text(
                                 "Start writing…",
-                                style = TextStyle(fontSize = 16.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.35f))
+                                style = TextStyle(
+                                    fontSize = 16.sp,
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.35f)
+                                )
                             )
                         }
                         inner()
@@ -135,7 +148,6 @@ fun NoteEditorScreen(
                 )
             }
 
-            // Error snackbar
             uiState.error?.let { error ->
                 Snackbar(
                     modifier = Modifier
@@ -147,7 +159,6 @@ fun NoteEditorScreen(
         }
     }
 
-    // Delete confirmation dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -156,7 +167,9 @@ fun NoteEditorScreen(
             confirmButton = {
                 TextButton(
                     onClick = { showDeleteDialog = false; viewModel.delete(onBack) },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
                 ) { Text("Delete") }
             },
             dismissButton = {

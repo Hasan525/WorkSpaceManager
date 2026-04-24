@@ -7,7 +7,7 @@ data class WorkspaceUiState(
     val items: List<WorkspaceItem> = emptyList(),
     val conflicts: List<ConflictInfo> = emptyList(),
     val isOnline: Boolean = true,
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val activeConflict: ConflictInfo? = null,
     val draggedItemId: String? = null,
     val error: String? = null

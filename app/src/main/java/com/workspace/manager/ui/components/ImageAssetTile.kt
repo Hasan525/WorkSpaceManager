@@ -52,7 +52,6 @@ fun ImageAssetTile(
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Rotatable image
         AsyncImage(
             model = asset.localUri ?: asset.downloadUrl,
             contentDescription = "Asset Image",
@@ -62,61 +61,69 @@ fun ImageAssetTile(
                 .rotate(animatedRotation)
                 .pointerInput(asset.id) {
                     awaitEachGesture {
-                        // Wait for at least the first down
                         awaitFirstDown(requireUnconsumed = false)
 
                         var prevAngle = 0f
                         var fingerCount = 0
+                        var prevFingerCount = 0  // tracks transitions to reset prevAngle
 
                         do {
                             val event = awaitPointerEvent()
                             val pressed = event.changes.filter { it.pressed }
                             fingerCount = pressed.size
 
-                            when (fingerCount) {
-                                1 -> {
-                                    // Finger 1: select/focus
+                            // Reset prevAngle when entering rotation mode from
+                            // single-finger (or zero-finger) state.  Without this
+                            // the first delta would be computed against a stale
+                            // angle causing an unwanted rotation jump.
+                            if (fingerCount >= 2 && prevFingerCount < 2) {
+                                prevAngle = 0f
+                            }
+                            prevFingerCount = fingerCount
+
+                            when {
+                                fingerCount == 1 -> {
+                                    // Finger 1: select / focus
                                     isSelected = true
                                     showHUD = false
                                     pressed.forEach { it.consume() }
                                 }
-                                2 -> {
-                                    // Finger 2: rotation
+
+                                fingerCount == 2 -> {
+                                    // Finger 2: rotation transformation (no HUD yet)
                                     isSelected = true
                                     val angle = angleBetween(
                                         pressed[0].position,
                                         pressed[1].position
                                     )
-                                    val delta = angle - prevAngle
                                     if (prevAngle != 0f) {
-                                        currentAngle += delta
+                                        currentAngle += angle - prevAngle
                                     }
                                     prevAngle = angle
                                     hudAngle = currentAngle
                                     showHUD = false
                                     pressed.forEach { it.consume() }
                                 }
-                                else -> {
-                                    // Finger 3+: show rotation HUD
-                                    if (pressed.size >= 3) {
-                                        val angle = angleBetween(
-                                            pressed[0].position,
-                                            pressed[1].position
-                                        )
-                                        val delta = angle - prevAngle
-                                        if (prevAngle != 0f) {
-                                            currentAngle += delta
-                                        }
-                                        prevAngle = angle
-                                        hudAngle = currentAngle
-                                        showHUD = true
-                                        pressed.forEach { it.consume() }
+
+                                fingerCount >= 3 -> {
+                                    // Finger 3: continue rotation AND display HUD
+                                    isSelected = true
+                                    val angle = angleBetween(
+                                        pressed[0].position,
+                                        pressed[1].position
+                                    )
+                                    if (prevAngle != 0f) {
+                                        currentAngle += angle - prevAngle
                                     }
+                                    prevAngle = angle
+                                    hudAngle = currentAngle
+                                    showHUD = true
+                                    pressed.forEach { it.consume() }
                                 }
                             }
                         } while (pressed.any { it.pressed })
 
-                        // Gesture ended — persist rotation & hide HUD
+                        // Gesture ended — persist final angle and hide HUD
                         showHUD = false
                         isSelected = false
                         if (fingerCount >= 2) {
@@ -126,7 +133,6 @@ fun ImageAssetTile(
                 }
         )
 
-        // HUD overlay (visible only with 3rd finger)
         if (showHUD) {
             RotationHUD(
                 angleDegrees = hudAngle,
@@ -134,7 +140,6 @@ fun ImageAssetTile(
             )
         }
 
-        // Pending sync badge
         if (asset.isPendingSync) {
             Box(
                 modifier = Modifier
@@ -156,9 +161,5 @@ fun ImageAssetTile(
     }
 }
 
-/** Calculates the angle in degrees between two pointer positions */
-private fun angleBetween(p1: Offset, p2: Offset): Float {
-    return Math.toDegrees(
-        atan2((p2.y - p1.y).toDouble(), (p2.x - p1.x).toDouble())
-    ).toFloat()
-}
+private fun angleBetween(p1: Offset, p2: Offset): Float =
+    Math.toDegrees(atan2((p2.y - p1.y).toDouble(), (p2.x - p1.x).toDouble())).toFloat()

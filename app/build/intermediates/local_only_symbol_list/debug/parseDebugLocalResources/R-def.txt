@@ -1,0 +1,34 @@
+R_DEF: Internal format may change without notice
+local
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+mipmap ic_launcher
+mipmap ic_launcher_round
+string add_image
+string add_note
+string app_name
+string cancel
+string conflict_detected
+string conflict_message
+string conflicts_banner
+string content_hint
+string delete
+string edit_note
+string gcm_defaultSenderId
+string google_api_key
+string google_app_id
+string google_crash_reporting_api_key
+string google_storage_bucket
+string keep_local
+string keep_remote
+string offline
+string online
+string project_id
+string rotation_hud_label
+string save
+string syncing
+string title_hint
+string untitled_note
+string workspace
+style Theme.WorkspaceManager
+xml file_paths

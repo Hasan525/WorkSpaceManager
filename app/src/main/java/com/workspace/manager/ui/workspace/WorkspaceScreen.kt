@@ -21,13 +21,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.workspace.manager.domain.model.ConflictResolution
 import com.workspace.manager.domain.model.WorkspaceItem
 import com.workspace.manager.ui.components.ConflictDialog
 import com.workspace.manager.ui.components.ImageAssetTile
@@ -43,15 +43,15 @@ fun WorkspaceScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri -> uri?.let { viewModel.pickImage(it) } }
 
-    // Permission launcher
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) { granted -> if (granted) imagePickerLauncher.launch("image/*") }
+    ) { granted ->
+        if (granted) imagePickerLauncher.launch("image/*")
+    }
 
     Scaffold(
         topBar = {
@@ -68,7 +68,6 @@ fun WorkspaceScreen(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Add Image FAB
                 SmallFloatingActionButton(
                     onClick = {
                         val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
@@ -81,9 +80,9 @@ fun WorkspaceScreen(
                     Icon(Icons.Default.Image, contentDescription = "Add Image")
                 }
 
-                // Add Note FAB
+                // Creates note then immediately navigates to the editor
                 FloatingActionButton(
-                    onClick = { viewModel.createNote() },
+                    onClick = { viewModel.createNote(onCreated = onNoteClick) },
                     containerColor = MaterialTheme.colorScheme.primary,
                     shape = CircleShape
                 ) {
@@ -106,12 +105,10 @@ fun WorkspaceScreen(
                 )
             }
 
-            // Loading overlay
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
 
-            // Error snackbar
             uiState.error?.let { errorMsg ->
                 Snackbar(
                     modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
@@ -123,7 +120,6 @@ fun WorkspaceScreen(
         }
     }
 
-    // Conflict resolution dialog
     uiState.activeConflict?.let { conflict ->
         ConflictDialog(
             conflict = conflict,
@@ -142,14 +138,8 @@ private fun WorkspaceTopBar(
 ) {
     Column {
         TopAppBar(
-            title = {
-                Text(
-                    text = "Workspace",
-                    style = MaterialTheme.typography.titleLarge
-                )
-            },
+            title = { Text("Workspace", style = MaterialTheme.typography.titleLarge) },
             actions = {
-                // Online/Offline indicator
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(end = 16.dp)
@@ -175,7 +165,6 @@ private fun WorkspaceTopBar(
             )
         )
 
-        // Conflict banner
         AnimatedVisibility(visible = conflictCount > 0) {
             Surface(
                 onClick = onConflictBannerClick,
@@ -214,8 +203,13 @@ private fun WorkspaceGrid(
     onDragEnd: (String, Int) -> Unit,
     onAssetRotated: (String, Float) -> Unit
 ) {
+    val gridState = rememberLazyStaggeredGridState()
+    // Index of the item the dragged tile is currently hovering over.
+    var dragTargetIndex by remember { mutableIntStateOf(-1) }
+
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Adaptive(160.dp),
+        state = gridState,
         contentPadding = PaddingValues(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalItemSpacing = 12.dp,
@@ -224,26 +218,65 @@ private fun WorkspaceGrid(
         itemsIndexed(items, key = { _, item -> item.id }) { index, item ->
             val isDragged = item.id == draggedItemId
             val elevation by animateDpAsState(if (isDragged) 16.dp else 0.dp, label = "elev")
-            val scale = if (isDragged) 1.05f else 1f
 
             Box(
                 modifier = Modifier
                     .animateItemPlacement()
-                    .scale(scale)
+                    .scale(if (isDragged) 1.05f else 1f)
                     .shadow(elevation, RoundedCornerShape(16.dp))
                     .pointerInput(item.id) {
+                        // Cumulative drag delta from this item's starting position.
+                        var cumulativeDrag = Offset.Zero
+
                         detectDragGesturesAfterLongPress(
-                            onDragStart = { _ -> onDragStart(item.id) },
-                            onDragEnd = { onDragEnd(item.id, index) },
-                            onDragCancel = { onDragEnd(item.id, index) },
-                            onDrag = { change, _ -> change.consume() }
+                            onDragStart = { _ ->
+                                onDragStart(item.id)
+                                cumulativeDrag = Offset.Zero
+                                dragTargetIndex = index
+                            },
+                            onDragEnd = {
+                                onDragEnd(
+                                    item.id,
+                                    dragTargetIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0))
+                                )
+                                dragTargetIndex = -1
+                            },
+                            onDragCancel = {
+                                onDragEnd(item.id, index)
+                                dragTargetIndex = -1
+                            },
+                            onDrag = { change, delta ->
+                                change.consume()
+                                cumulativeDrag += delta
+
+                                // Find the item whose centre is closest to the
+                                // dragged tile's estimated current centre.  The
+                                // layoutInfo offsets are relative to the viewport
+                                // top-left, which is what we want here.
+                                val myInfo = gridState.layoutInfo.visibleItemsInfo
+                                    .find { it.key == item.id }
+
+                                if (myInfo != null) {
+                                    val cx = myInfo.offset.x + myInfo.size.width / 2f + cumulativeDrag.x
+                                    val cy = myInfo.offset.y + myInfo.size.height / 2f + cumulativeDrag.y
+
+                                    val closest = gridState.layoutInfo.visibleItemsInfo
+                                        .minByOrNull { info ->
+                                            val dx = info.offset.x + info.size.width / 2f - cx
+                                            val dy = info.offset.y + info.size.height / 2f - cy
+                                            dx * dx + dy * dy
+                                        }
+                                    dragTargetIndex = closest?.index ?: index
+                                }
+                            }
                         )
                     }
             ) {
                 when (item) {
                     is WorkspaceItem.NoteItem -> NoteTile(
                         note = item.note,
-                        onClick = { onNoteClick(item.note.id) }
+                        // Suppress click while dragging to avoid accidental navigation
+                        onClick = { if (!isDragged) onNoteClick(item.note.id) }
                     )
                     is WorkspaceItem.AssetItem -> ImageAssetTile(
                         asset = item.asset,

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -94,9 +95,11 @@ fun NoteTile(
                     Spacer(Modifier.height(8.dp))
                 }
 
-                // Timestamp
+                // Timestamp — format remembered so SimpleDateFormat is not allocated every frame
+                val sdf = remember { java.text.SimpleDateFormat("MMM d, HH:mm", java.util.Locale.getDefault()) }
+                val formattedTime = remember(note.updatedAt) { sdf.format(java.util.Date(note.updatedAt)) }
                 Text(
-                    text = formatTimestamp(note.updatedAt),
+                    text = formattedTime,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
                 )
@@ -116,9 +119,4 @@ fun NoteTile(
             )
         }
     }
-}
-
-private fun formatTimestamp(millis: Long): String {
-    val sdf = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault())
-    return sdf.format(Date(millis))
 }

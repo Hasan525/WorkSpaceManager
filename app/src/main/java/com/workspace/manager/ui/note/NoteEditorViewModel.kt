@@ -9,6 +9,7 @@ import com.workspace.manager.domain.usecase.SaveNoteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 data class NoteEditorUiState(
@@ -57,23 +58,24 @@ class NoteEditorViewModel @Inject constructor(
 
     private fun loadNote(id: String) {
         viewModelScope.launch {
-            repository.observeNotes()
-                .map { notes -> notes.find { it.id == id } }
-                .filterNotNull()
-                .firstOrNull()
-                ?.let { note ->
-                    // Only update if user hasn't made local edits yet
-                    if (_uiState.value.title.isBlank() && _uiState.value.content.isBlank()) {
-                        _uiState.update {
-                            it.copy(
-                                title = note.title,
-                                content = note.content,
-                                sortOrder = note.sortOrder,
-                                createdAt = note.createdAt
-                            )
-                        }
+            // withTimeoutOrNull prevents hanging forever if Room is slow on first open
+            withTimeoutOrNull(3_000L) {
+                repository.observeNotes()
+                    .mapNotNull { notes -> notes.find { it.id == id } }
+                    .first()   // collect exactly one item then cancel — safe with mapNotNull
+            }?.let { note ->
+                // Only populate fields if the user hasn't already started typing
+                if (_uiState.value.title.isBlank() && _uiState.value.content.isBlank()) {
+                    _uiState.update {
+                        it.copy(
+                            title = note.title,
+                            content = note.content,
+                            sortOrder = note.sortOrder,
+                            createdAt = note.createdAt
+                        )
                     }
                 }
+            }
         }
     }
 
@@ -89,7 +91,7 @@ class NoteEditorViewModel @Inject constructor(
 
     fun save() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isSaving = true) }
+            _uiState.update { it.copy(isSaving = true, isSaved = false) }
             try {
                 val state = _uiState.value
                 saveNote(
@@ -105,6 +107,9 @@ class NoteEditorViewModel @Inject constructor(
             }
         }
     }
+
+    /** Called by the screen after it has acted on isSaved=true (e.g. navigated back) */
+    fun onSavedHandled() = _uiState.update { it.copy(isSaved = false) }
 
     fun delete(onComplete: () -> Unit) {
         val id = _uiState.value.noteId ?: return

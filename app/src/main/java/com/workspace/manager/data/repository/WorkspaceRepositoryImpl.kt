@@ -36,7 +36,10 @@ class WorkspaceRepositoryImpl @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
-        startFirestoreSync()
+        scope.launch {
+            try { firestoreDataSource.ensureAuth() } catch (_: Exception) {}
+            startFirestoreSync()
+        }
         observeConnectivity()
     }
 
@@ -64,9 +67,7 @@ class WorkspaceRepositoryImpl @Inject constructor(
     // ── Notes ─────────────────────────────────────────────────────────────────
 
     override suspend fun saveNote(note: Note) {
-        // 1. Atomic local write first
         noteDao.upsertNote(note.toEntity().copy(isPendingSync = true))
-        // 2. Try remote sync
         trySync { firestoreDataSource.saveNote(note.toDto()); noteDao.markSynced(note.id) }
     }
 
@@ -90,14 +91,13 @@ class WorkspaceRepositoryImpl @Inject constructor(
             id = id, downloadUrl = localUri.toString(), localUri = localUri.toString(),
             sortOrder = now, createdAt = now, updatedAt = now, isPendingSync = true
         )
-        // Save locally first
         assetDao.upsertAsset(asset.toEntity())
-        // Upload to Storage then update URL
         trySync {
             val url = storageDataSource.uploadImage(localUri, id)
             val synced = asset.copy(downloadUrl = url, isPendingSync = false)
             assetDao.upsertAsset(synced.toEntity())
             firestoreDataSource.saveAsset(synced.toDto())
+            assetDao.markSynced(id)
         }
         return asset
     }
@@ -111,7 +111,7 @@ class WorkspaceRepositoryImpl @Inject constructor(
         val now = System.currentTimeMillis()
         assetDao.updateRotation(id, angle, now)
         val asset = assetDao.getAssetById(id)?.toDomain() ?: return
-        trySync { firestoreDataSource.saveAsset(asset.toDto()) }
+        trySync { firestoreDataSource.saveAsset(asset.toDto()); assetDao.markSynced(id) }
     }
 
     override suspend fun reorderAsset(id: String, newSortOrder: Long) {
@@ -127,7 +127,10 @@ class WorkspaceRepositoryImpl @Inject constructor(
         when (resolution) {
             ConflictResolution.KEEP_LOCAL -> {
                 noteDao.clearConflict(noteId)
-                trySync { firestoreDataSource.saveNote(entity.toDomain().toDto()); noteDao.markSynced(noteId) }
+                trySync {
+                    firestoreDataSource.saveNote(entity.toDomain().toDto())
+                    noteDao.markSynced(noteId)
+                }
             }
             ConflictResolution.KEEP_REMOTE -> {
                 noteDao.upsertNote(
@@ -135,9 +138,29 @@ class WorkspaceRepositoryImpl @Inject constructor(
                         content = entity.remoteContent ?: entity.content,
                         updatedAt = entity.remoteUpdatedAt,
                         isConflicted = false,
-                        isPendingSync = false
+                        isPendingSync = false,
+                        remoteUpdatedAt = entity.remoteUpdatedAt
                     )
                 )
+            }
+            ConflictResolution.MERGE -> {
+                val merged = buildString {
+                    append(entity.content)
+                    append("\n\n--- Remote version ---\n\n")
+                    append(entity.remoteContent ?: "")
+                }
+                val now = System.currentTimeMillis()
+                val mergedEntity = entity.copy(
+                    content = merged,
+                    updatedAt = now,
+                    isConflicted = false,
+                    isPendingSync = true
+                )
+                noteDao.upsertNote(mergedEntity)
+                trySync {
+                    firestoreDataSource.saveNote(mergedEntity.toDomain().toDto())
+                    noteDao.markSynced(noteId)
+                }
             }
         }
     }
@@ -146,36 +169,101 @@ class WorkspaceRepositoryImpl @Inject constructor(
 
     override suspend fun syncPendingChanges() {
         noteDao.getPendingSyncNotes().forEach { entity ->
-            trySync { firestoreDataSource.saveNote(entity.toDomain().toDto()); noteDao.markSynced(entity.id) }
+            trySync {
+                firestoreDataSource.saveNote(entity.toDomain().toDto())
+                noteDao.markSynced(entity.id)
+            }
         }
         assetDao.getPendingSyncAssets().forEach { entity ->
-            trySync { firestoreDataSource.saveAsset(entity.toDomain().toDto()); assetDao.markSynced(entity.id) }
+            trySync {
+                // If the downloadUrl is still a local URI, the Storage upload failed while
+                // offline — re-upload now before pushing the document to Firestore.
+                val dto = if (entity.downloadUrl.startsWith("content://") ||
+                    entity.downloadUrl.startsWith("file://")
+                ) {
+                    val uploadUri = Uri.parse(entity.localUri ?: entity.downloadUrl)
+                    val url = storageDataSource.uploadImage(uploadUri, entity.id)
+                    val updated = entity.copy(downloadUrl = url)
+                    assetDao.upsertAsset(updated)
+                    updated.toDomain().toDto()
+                } else {
+                    entity.toDomain().toDto()
+                }
+                firestoreDataSource.saveAsset(dto)
+                assetDao.markSynced(entity.id)
+            }
         }
     }
 
     // ── Internal helpers ──────────────────────────────────────────────────────
 
     private suspend fun trySync(block: suspend () -> Unit) {
-        try { block() } catch (_: Exception) { /* will retry on next connection */ }
+        try { block() } catch (_: Exception) { /* queued — will retry on next connection */ }
     }
 
-    /** Mirror Firestore changes into Room, detecting conflicts */
+    /**
+     * Mirrors Firestore into Room.
+     *
+     * Conflict detection: a conflict exists only when the local note has
+     * unsynchronised changes (isPendingSync) AND the remote version is newer
+     * than the last version we successfully synced (remoteUpdatedAt), which
+     * means another device wrote to the same note while we were offline.
+     *
+     * Remote deletions: notes/assets absent from the snapshot that have no
+     * local pending changes are removed from Room as well.
+     */
     private fun startFirestoreSync() {
         firestoreDataSource.observeNotes().onEach { remoteDtos ->
+            val remoteIds = remoteDtos.map { it.id }.toSet()
+
+            // Propagate remote deletions — skip notes with unsync'd local edits
+            noteDao.getAllNoteIds().forEach { localId ->
+                if (localId !in remoteIds) {
+                    val local = noteDao.getNoteById(localId)
+                    if (local != null && !local.isPendingSync) {
+                        noteDao.deleteNote(localId)
+                    }
+                }
+            }
+
+            // Upsert / conflict-detect for every remote note
             remoteDtos.forEach { dto ->
                 val local = noteDao.getNoteById(dto.id)
                 when {
-                    local == null -> noteDao.upsertNote(dto.toEntity())
-                    local.isPendingSync && dto.updatedAt > local.remoteUpdatedAt -> {
-                        // CONFLICT
-                        noteDao.upsertNote(local.copy(isConflicted = true, remoteContent = dto.content, remoteUpdatedAt = dto.updatedAt))
-                    }
-                    !local.isPendingSync -> noteDao.upsertNote(dto.toEntity())
+                    local == null ->
+                        noteDao.upsertNote(dto.toEntity())
+
+                    // Another device modified the same note while we were offline
+                    local.isPendingSync && dto.updatedAt > local.remoteUpdatedAt ->
+                        noteDao.upsertNote(
+                            local.copy(
+                                isConflicted = true,
+                                remoteContent = dto.content,
+                                remoteUpdatedAt = dto.updatedAt
+                            )
+                        )
+
+                    // No local pending changes — accept the remote version
+                    !local.isPendingSync ->
+                        noteDao.upsertNote(dto.toEntity())
                 }
             }
         }.launchIn(scope)
 
         firestoreDataSource.observeAssets().onEach { remoteDtos ->
+            val remoteIds = remoteDtos.map { it.id }.toSet()
+
+            // Propagate remote deletions
+            assetDao.getAllAssetIds().forEach { localId ->
+                if (localId !in remoteIds) {
+                    val local = assetDao.getAssetById(localId)
+                    if (local != null && !local.isPendingSync) {
+                        assetDao.deleteAsset(localId)
+                    }
+                }
+            }
+
+            // Upsert remote assets (local pending rotation/reorder takes priority)
             remoteDtos.forEach { dto ->
                 val local = assetDao.getAssetById(dto.id)
                 if (local == null || !local.isPendingSync) {
