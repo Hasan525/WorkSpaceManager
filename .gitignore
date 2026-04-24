@@ -1,10 +1,71 @@
+# ============================================================
+# Android / Gradle build outputs
+# ============================================================
 *.iml
-.gradle
+.gradle/
 local.properties
-/.idea
-.DS_Store
 /build
+app/build
+**/build/
+
+# Generated native build artifacts
+.externalNativeBuild/
+.cxx/
 /captures
-.externalNativeBuild
-.cxx
+
+# ============================================================
+# IDE — IntelliJ / Android Studio
+# ============================================================
+/.idea/
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# ============================================================
+# OS generated files
+# ============================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ============================================================
+# Secrets & local config — never commit these
+# ============================================================
+# Firebase / Google Services (add per-environment copies manually if needed)
+google-services.json
 app/google-services.json
+GoogleService-Info.plist
+
+# API keys & secrets
+*.env
+secrets.properties
+keystore.properties
+*.jks
+*.keystore
+*.p12
+
+# ============================================================
+# Kotlin / Java generated files
+# ============================================================
+*.class
+*.jar
+*.war
+*.ear
+*.aar
+
+# ============================================================
+# Misc
+# ============================================================
+# Gradle wrapper (keep gradlew scripts, ignore binary)
+!gradle/wrapper/gradle-wrapper.jar
+
+# Lint output
+lint/
+*.xml.bak
