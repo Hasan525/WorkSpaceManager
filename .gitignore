@@ -3,7 +3,14 @@
 local.properties
 /.idea
 .DS_Store
-/build
+
+# Build outputs — all modules (was "/build" which only caught the root folder)
+build/
+**/build/
+
 /captures
 .externalNativeBuild
 .cxx
+
+# Claude Code working files
+.claude/
