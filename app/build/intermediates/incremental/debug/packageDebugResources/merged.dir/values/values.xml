@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_base">#FF0C0C14</color>
+    <string name="add_image">Add Image</string>
+    <string name="add_note">Add Note</string>
+    <string name="app_name">Workspace Manager</string>
+    <string name="cancel">Cancel</string>
+    <string name="conflict_detected">Conflict Detected</string>
+    <string name="conflict_message">This note was edited both locally and remotely. Choose which version to keep.</string>
+    <string name="conflicts_banner">You have unresolved conflicts. Tap to resolve.</string>
+    <string name="content_hint">Start writing…</string>
+    <string name="delete">Delete</string>
+    <string name="edit_note">Edit Note</string>
+    <string name="gcm_defaultSenderId" translatable="false">1095123920558</string>
+    <string name="google_api_key" translatable="false">AIzaSyB6FTpl7OTTqaUvB8Lc1QMjSnaDiAk4TCI</string>
+    <string name="google_app_id" translatable="false">1:1095123920558:android:2391b9a8f777d1c4672f3f</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyB6FTpl7OTTqaUvB8Lc1QMjSnaDiAk4TCI</string>
+    <string name="google_storage_bucket" translatable="false">workspacemanager-70db1.firebasestorage.app</string>
+    <string name="keep_local">Keep Local</string>
+    <string name="keep_remote">Keep Remote</string>
+    <string name="offline">Offline</string>
+    <string name="online">Online</string>
+    <string name="project_id" translatable="false">workspacemanager-70db1</string>
+    <string name="rotation_hud_label">Rotation</string>
+    <string name="save">Save</string>
+    <string name="syncing">Syncing…</string>
+    <string name="title_hint">Title…</string>
+    <string name="untitled_note">Untitled Note</string>
+    <string name="workspace">Workspace</string>
+    <style name="Theme.WorkspaceManager" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/bg_base</item>
+        <item name="android:statusBarColor">@color/bg_base</item>
+        <item name="android:navigationBarColor">@color/bg_base</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
