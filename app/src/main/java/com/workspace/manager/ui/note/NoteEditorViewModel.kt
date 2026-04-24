@@ -7,6 +7,7 @@ import com.workspace.manager.domain.repository.WorkspaceRepository
 import com.workspace.manager.domain.usecase.DeleteNoteUseCase
 import com.workspace.manager.domain.usecase.SaveNoteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -36,6 +37,7 @@ class NoteEditorViewModel @Inject constructor(
         const val KEY_NOTE_ID = "noteId"
         const val KEY_TITLE = "draftTitle"
         const val KEY_CONTENT = "draftContent"
+        private const val MIN_SAVE_FEEDBACK_MS = 600L
     }
 
     private val noteId: String? = savedStateHandle[KEY_NOTE_ID]
@@ -90,8 +92,11 @@ class NoteEditorViewModel @Inject constructor(
     }
 
     fun save() {
+        // Guard against rapid double-taps — second tap is a no-op while the first is in flight
+        if (_uiState.value.isSaving) return
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, isSaved = false) }
+            val started = System.currentTimeMillis()
             try {
                 val state = _uiState.value
                 saveNote(
@@ -101,6 +106,11 @@ class NoteEditorViewModel @Inject constructor(
                     sortOrder = state.sortOrder,
                     createdAt = state.createdAt
                 )
+                // Ensure the spinner is visible for a perceivable beat so users get
+                // clear feedback that their save was accepted (the local write itself
+                // is sub-frame so without this the spinner only "blinks").
+                val elapsed = System.currentTimeMillis() - started
+                if (elapsed < MIN_SAVE_FEEDBACK_MS) delay(MIN_SAVE_FEEDBACK_MS - elapsed)
                 _uiState.update { it.copy(isSaving = false, isSaved = true) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSaving = false, error = e.message) }

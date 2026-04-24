@@ -32,7 +32,10 @@ fun NoteEditorScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isSaved) {
-        if (uiState.isSaved && noteId == null) onBack()
+        if (uiState.isSaved) {
+            viewModel.onSavedHandled()
+            onBack()
+        }
     }
 
     val wordCount = remember(uiState.content) {
@@ -191,31 +194,35 @@ private fun EditorTopBar(
                     )
                 }
             }
-            Box(
-                modifier = Modifier.padding(end = Dim.Space12),
-                contentAlignment = Alignment.Center
+            // Save button — keeps the same size/shape whether idle or loading,
+            // so the layout doesn't shift and the loading state is unmistakable.
+            IconButton(
+                onClick = onSave,
+                enabled = !isSaving,
+                modifier = Modifier
+                    .padding(end = Dim.Space12)
+                    .size(Dim.SaveBtnSize + Dim.Space8)
             ) {
-                if (isSaving) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(Dim.IconMd),
-                        color = Forest,
-                        strokeWidth = Dim.BorderThick
-                    )
-                } else {
-                    IconButton(onClick = onSave) {
-                        Box(
-                            modifier = Modifier
-                                .size(Dim.SaveBtnSize)
-                                .background(Forest, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = "Save",
-                                tint = TextPrimary,
-                                modifier = Modifier.size(Dim.IconSm)
-                            )
-                        }
+                Box(
+                    modifier = Modifier
+                        .size(Dim.SaveBtnSize)
+                        .background(Forest, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(Dim.IconLg),
+                            color = TextPrimary,
+                            strokeWidth = Dim.BorderThick,
+                            trackColor = TextPrimary.copy(alpha = 0.25f)
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = "Save",
+                            tint = TextPrimary,
+                            modifier = Modifier.size(Dim.IconMd)
+                        )
                     }
                 }
             }

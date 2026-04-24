@@ -197,8 +197,17 @@ class WorkspaceRepositoryImpl @Inject constructor(
 
     // ── Internal helpers ──────────────────────────────────────────────────────
 
-    private suspend fun trySync(block: suspend () -> Unit) {
-        try { block() } catch (_: Exception) { /* queued — will retry on next connection */ }
+    /**
+     * Fire-and-forget remote sync. Local-first: callers should never wait for
+     * the network — they update Room synchronously and let Firestore catch up
+     * in the background. The repo's [scope] is process-lifetime (SupervisorJob)
+     * so the launched block survives ViewModel teardown. Failures leave the
+     * row marked isPendingSync; SyncWorker / connectivity observer retries.
+     */
+    private fun trySync(block: suspend () -> Unit) {
+        scope.launch {
+            try { block() } catch (_: Exception) { /* queued — will retry on next connection */ }
+        }
     }
 
     /**

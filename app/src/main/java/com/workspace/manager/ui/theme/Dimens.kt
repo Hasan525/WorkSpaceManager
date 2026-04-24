@@ -45,7 +45,7 @@ object Dim {
     val FabSize        = 56.dp
     val MiniFabSize    = 40.dp
     val IconButtonSize = 40.dp
-    val SaveBtnSize    = 36.dp
+    val SaveBtnSize    = 44.dp
 
     // Layout
     val ContentMaxWidth      = 720.dp   // cap reading column on tablets
