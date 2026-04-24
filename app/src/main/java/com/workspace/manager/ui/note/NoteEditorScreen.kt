@@ -190,7 +190,7 @@ private fun EditorTopBar(
                     Icon(
                         Icons.Default.DeleteOutline,
                         contentDescription = "Delete",
-                        tint = TextMuted
+                        tint = StatusRed
                     )
                 }
             }
