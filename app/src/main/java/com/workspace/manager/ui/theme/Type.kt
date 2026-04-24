@@ -7,125 +7,123 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * Material 3 standard type scale.
- * Reference: https://m3.material.io/styles/typography/type-scale-tokens
- *
- * Sizes / line heights / letter spacing / weights match the M3 spec exactly.
+ * Material 3 type scale, bumped +2sp across the board for a slightly larger feel.
+ * Line heights also +2sp to preserve the original size-to-line-height ratio.
  * Use these via `MaterialTheme.typography.*` — never hardcode sp values in screens.
  */
 val WorkspaceTypography = Typography(
-    // Display — hero / marketing text (rare in app shell)
+    // Display
     displayLarge = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Normal,
-        fontSize      = 57.sp,
-        lineHeight    = 64.sp,
+        fontSize      = 59.sp,
+        lineHeight    = 66.sp,
         letterSpacing = (-0.25).sp
     ),
     displayMedium = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Normal,
-        fontSize      = 45.sp,
-        lineHeight    = 52.sp,
+        fontSize      = 47.sp,
+        lineHeight    = 54.sp,
         letterSpacing = 0.sp
     ),
     displaySmall = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Normal,
-        fontSize      = 36.sp,
-        lineHeight    = 44.sp,
+        fontSize      = 38.sp,
+        lineHeight    = 46.sp,
         letterSpacing = 0.sp
     ),
 
-    // Headline — top-of-screen titles
+    // Headline
     headlineLarge = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Normal,
-        fontSize      = 32.sp,
-        lineHeight    = 40.sp,
+        fontSize      = 34.sp,
+        lineHeight    = 42.sp,
         letterSpacing = 0.sp
     ),
     headlineMedium = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Normal,
-        fontSize      = 28.sp,
-        lineHeight    = 36.sp,
+        fontSize      = 30.sp,
+        lineHeight    = 38.sp,
         letterSpacing = 0.sp
     ),
     headlineSmall = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Normal,
-        fontSize      = 24.sp,
-        lineHeight    = 32.sp,
+        fontSize      = 26.sp,
+        lineHeight    = 34.sp,
         letterSpacing = 0.sp
     ),
 
-    // Title — section headers, dialog titles
+    // Title
     titleLarge = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Normal,
-        fontSize      = 22.sp,
-        lineHeight    = 28.sp,
+        fontSize      = 24.sp,
+        lineHeight    = 30.sp,
         letterSpacing = 0.sp
     ),
     titleMedium = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Medium,
-        fontSize      = 16.sp,
-        lineHeight    = 24.sp,
+        fontSize      = 18.sp,
+        lineHeight    = 26.sp,
         letterSpacing = 0.15.sp
     ),
     titleSmall = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Medium,
-        fontSize      = 14.sp,
-        lineHeight    = 20.sp,
+        fontSize      = 16.sp,
+        lineHeight    = 22.sp,
         letterSpacing = 0.1.sp
     ),
 
-    // Body — main reading text
+    // Body
     bodyLarge = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Normal,
-        fontSize      = 16.sp,
-        lineHeight    = 24.sp,
+        fontSize      = 18.sp,
+        lineHeight    = 26.sp,
         letterSpacing = 0.5.sp
     ),
     bodyMedium = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Normal,
-        fontSize      = 14.sp,
-        lineHeight    = 20.sp,
+        fontSize      = 16.sp,
+        lineHeight    = 22.sp,
         letterSpacing = 0.25.sp
     ),
     bodySmall = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Normal,
-        fontSize      = 12.sp,
-        lineHeight    = 16.sp,
+        fontSize      = 14.sp,
+        lineHeight    = 18.sp,
         letterSpacing = 0.4.sp
     ),
 
-    // Label — buttons, chips, captions
+    // Label
     labelLarge = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Medium,
-        fontSize      = 14.sp,
-        lineHeight    = 20.sp,
+        fontSize      = 16.sp,
+        lineHeight    = 22.sp,
         letterSpacing = 0.1.sp
     ),
     labelMedium = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Medium,
-        fontSize      = 12.sp,
-        lineHeight    = 16.sp,
+        fontSize      = 14.sp,
+        lineHeight    = 18.sp,
         letterSpacing = 0.5.sp
     ),
     labelSmall = TextStyle(
         fontFamily    = FontFamily.Default,
         fontWeight    = FontWeight.Medium,
-        fontSize      = 11.sp,
-        lineHeight    = 16.sp,
+        fontSize      = 13.sp,
+        lineHeight    = 18.sp,
         letterSpacing = 0.5.sp
     )
 )
