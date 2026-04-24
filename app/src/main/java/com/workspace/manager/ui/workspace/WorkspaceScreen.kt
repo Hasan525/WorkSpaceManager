@@ -31,7 +31,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -108,10 +107,13 @@ fun WorkspaceScreen(
                 WorkspaceGrid(
                     items = uiState.items,
                     draggedItemId = uiState.draggedItemId,
+                    selectedAssetId = uiState.selectedAssetId,
                     onNoteClick = onNoteClick,
+                    onAssetClick = viewModel::toggleAssetSelection,
                     onDragStart = viewModel::onDragStart,
                     onDragEnd = viewModel::onDragEnd,
-                    onAssetRotated = viewModel::onAssetRotated
+                    onAssetRotated = viewModel::onAssetRotated,
+                    onAssetDeleteRequested = viewModel::requestDeleteAsset
                 )
             }
 
@@ -146,6 +148,30 @@ fun WorkspaceScreen(
             conflict = conflict,
             onResolve = { resolution -> viewModel.resolveConflict(resolution) },
             onDismiss = viewModel::dismissConflict
+        )
+    }
+
+    if (uiState.assetPendingDelete != null) {
+        AlertDialog(
+            onDismissRequest = viewModel::cancelDeleteAsset,
+            containerColor = BgElevated,
+            titleContentColor = TextPrimary,
+            textContentColor = TextSecondary,
+            shape = RoundedCornerShape(Dim.RadiusXl),
+            title = { Text("Delete this image?") },
+            text = { Text("This will permanently remove the image from all devices.") },
+            confirmButton = {
+                TextButton(
+                    onClick = viewModel::confirmDeleteAsset,
+                    colors = ButtonDefaults.textButtonColors(contentColor = StatusRed)
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = viewModel::cancelDeleteAsset,
+                    colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)
+                ) { Text("Cancel") }
+            }
         )
     }
 }
@@ -369,10 +395,13 @@ private fun FabAction(
 private fun WorkspaceGrid(
     items: List<WorkspaceItem>,
     draggedItemId: String?,
+    selectedAssetId: String?,
     onNoteClick: (String) -> Unit,
+    onAssetClick: (String) -> Unit,
     onDragStart: (String) -> Unit,
     onDragEnd: (String, Int) -> Unit,
-    onAssetRotated: (String, Float) -> Unit
+    onAssetRotated: (String, Float) -> Unit,
+    onAssetDeleteRequested: (String) -> Unit
 ) {
     val gridState = rememberLazyStaggeredGridState()
     var dragTargetIndex by remember { mutableIntStateOf(-1) }
@@ -455,7 +484,10 @@ private fun WorkspaceGrid(
                     )
                     is WorkspaceItem.AssetItem -> ImageAssetTile(
                         asset = item.asset,
-                        onRotationChanged = { angle -> onAssetRotated(item.asset.id, angle) }
+                        isSelected = item.asset.id == selectedAssetId,
+                        onClick = { if (!isDragged) onAssetClick(item.asset.id) },
+                        onRotationChanged = { angle -> onAssetRotated(item.asset.id, angle) },
+                        onDeleteRequested = { onAssetDeleteRequested(item.asset.id) }
                     )
                 }
             }
@@ -493,7 +525,7 @@ private fun EmptyWorkspaceHint(modifier: Modifier = Modifier) {
         Spacer(Modifier.height(Dim.Space24))
         Text(
             text = "A clean canvas",
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium),
+            style = MaterialTheme.typography.titleLarge,
             color = TextPrimary
         )
         Spacer(Modifier.height(Dim.Space8))

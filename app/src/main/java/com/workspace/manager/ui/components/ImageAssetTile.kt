@@ -1,13 +1,22 @@
 package com.workspace.manager.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,19 +37,26 @@ import kotlin.math.atan2
 @Composable
 fun ImageAssetTile(
     asset: Asset,
+    isSelected: Boolean,
+    onClick: () -> Unit,
     onRotationChanged: (Float) -> Unit,
+    onDeleteRequested: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var currentAngle by remember(asset.id) { mutableFloatStateOf(asset.rotationAngle) }
     var showHUD by remember { mutableStateOf(false) }
     var hudAngle by remember { mutableFloatStateOf(0f) }
-    var isSelected by remember { mutableStateOf(false) }
+    // Transient visual state while a 2+ finger rotation is in progress
+    var isRotating by remember { mutableStateOf(false) }
 
     val animatedRotation by animateFloatAsState(
         targetValue   = currentAngle,
         animationSpec = spring(dampingRatio = 0.8f),
         label         = "rotation"
     )
+
+    // Tile is "active" (highlighted) when either selected by tap OR mid-rotation
+    val isActive = isSelected || isRotating
 
     Box(
         modifier = modifier
@@ -49,10 +65,11 @@ fun ImageAssetTile(
             .clip(RoundedCornerShape(Dim.RadiusLg))
             .background(BgSurface)
             .border(
-                width = Dim.BorderThin,
-                color = if (isSelected) Forest.copy(alpha = 0.7f) else BorderSubtle,
+                width = if (isActive) Dim.BorderThick else Dim.BorderThin,
+                color = if (isActive) Forest else BorderSubtle,
                 shape = RoundedCornerShape(Dim.RadiusLg)
-            ),
+            )
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         AsyncImage(
@@ -75,18 +92,18 @@ fun ImageAssetTile(
                             val pressed = event.changes.filter { it.pressed }
                             fingerCount = pressed.size
 
-                            // Reset rotation reference when entering 2+ finger mode
                             if (fingerCount >= 2 && prevFingerCount < 2) {
                                 prevAngle = 0f
                             }
                             prevFingerCount = fingerCount
 
-                            // Only consume when we actually own the gesture (2+ fingers = rotation).
-                            // Single-finger touches pass through so the parent grid can scroll
-                            // and the long-press drag-reorder can fire.
+                            // Only consume when 2+ fingers (rotation). Single-finger touches
+                            // pass through so the parent grid can scroll, the wrapping
+                            // detectDragGesturesAfterLongPress can fire (drag-reorder), and
+                            // the outer clickable can register the tap (selection).
                             when {
                                 fingerCount == 2 -> {
-                                    isSelected = true
+                                    isRotating = true
                                     val angle = angleBetween(pressed[0].position, pressed[1].position)
                                     if (prevAngle != 0f) currentAngle += angle - prevAngle
                                     prevAngle = angle
@@ -95,7 +112,7 @@ fun ImageAssetTile(
                                     pressed.forEach { it.consume() }
                                 }
                                 fingerCount >= 3 -> {
-                                    isSelected = true
+                                    isRotating = true
                                     val angle = angleBetween(pressed[0].position, pressed[1].position)
                                     if (prevAngle != 0f) currentAngle += angle - prevAngle
                                     prevAngle = angle
@@ -107,12 +124,13 @@ fun ImageAssetTile(
                         } while (pressed.any { it.pressed })
 
                         showHUD = false
-                        isSelected = false
+                        isRotating = false
                         if (fingerCount >= 2) onRotationChanged(currentAngle)
                     }
                 }
         )
 
+        // Bottom scrim — keeps badge readable over any image
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -125,7 +143,8 @@ fun ImageAssetTile(
                 )
         )
 
-        if (isSelected) {
+        // Inner glow ring — extra emphasis when active
+        if (isActive) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -137,11 +156,37 @@ fun ImageAssetTile(
             )
         }
 
+        // Rotation HUD takes priority over the delete button — they share the top-end corner
         if (showHUD) {
             RotationHUD(
                 angleDegrees = hudAngle,
                 modifier = Modifier.align(Alignment.TopEnd)
             )
+        } else {
+            // Delete button only appears once the user has tapped to select
+            AnimatedVisibility(
+                visible = isSelected,
+                enter = fadeIn() + scaleIn(initialScale = 0.7f),
+                exit  = fadeOut() + scaleOut(targetScale = 0.7f),
+                modifier = Modifier.align(Alignment.TopEnd)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .padding(Dim.Space8)
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(StatusRed)
+                        .clickable(onClick = onDeleteRequested),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Delete image",
+                        tint = TextPrimary,
+                        modifier = Modifier.size(Dim.IconMd)
+                    )
+                }
+            }
         }
 
         if (asset.isPendingSync) {

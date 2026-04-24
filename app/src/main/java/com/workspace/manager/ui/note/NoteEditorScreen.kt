@@ -16,10 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.workspace.manager.ui.theme.*
@@ -86,29 +83,15 @@ fun NoteEditorScreen(
             ) {
                 Spacer(Modifier.height(Dim.Space8))
 
+                val titleStyle = MaterialTheme.typography.headlineMedium
                 BasicTextField(
                     value = uiState.title,
                     onValueChange = viewModel::onTitleChanged,
-                    textStyle = TextStyle(
-                        fontSize      = 32.sp,
-                        fontWeight    = FontWeight.Medium,
-                        color         = TextPrimary,
-                        lineHeight    = 40.sp,
-                        letterSpacing = (-0.6).sp
-                    ),
+                    textStyle = titleStyle.copy(color = TextPrimary),
                     cursorBrush = SolidColor(Forest),
                     decorationBox = { inner ->
                         if (uiState.title.isEmpty()) {
-                            Text(
-                                "Untitled",
-                                style = TextStyle(
-                                    fontSize      = 32.sp,
-                                    fontWeight    = FontWeight.Medium,
-                                    color         = TextMuted,
-                                    lineHeight    = 40.sp,
-                                    letterSpacing = (-0.6).sp
-                                )
-                            )
+                            Text("Untitled", style = titleStyle.copy(color = TextMuted))
                         }
                         inner()
                     },
@@ -117,26 +100,15 @@ fun NoteEditorScreen(
 
                 Spacer(Modifier.height(Dim.Space20))
 
+                val contentStyle = MaterialTheme.typography.bodyLarge
                 BasicTextField(
                     value = uiState.content,
                     onValueChange = viewModel::onContentChanged,
-                    textStyle = TextStyle(
-                        fontSize      = 16.sp,
-                        lineHeight    = 28.sp,
-                        color         = TextSecondary,
-                        letterSpacing = 0.sp
-                    ),
+                    textStyle = contentStyle.copy(color = TextPrimary),
                     cursorBrush = SolidColor(Forest),
                     decorationBox = { inner ->
                         if (uiState.content.isEmpty()) {
-                            Text(
-                                "Start writing…",
-                                style = TextStyle(
-                                    fontSize      = 16.sp,
-                                    lineHeight    = 28.sp,
-                                    color         = TextMuted
-                                )
-                            )
+                            Text("Start writing…", style = contentStyle.copy(color = TextMuted))
                         }
                         inner()
                     },

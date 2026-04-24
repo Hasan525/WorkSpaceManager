@@ -10,5 +10,7 @@ data class WorkspaceUiState(
     val isLoading: Boolean = true,
     val activeConflict: ConflictInfo? = null,
     val draggedItemId: String? = null,
+    val selectedAssetId: String? = null,
+    val assetPendingDelete: String? = null,
     val error: String? = null
 )

@@ -19,6 +19,7 @@ class WorkspaceViewModel @Inject constructor(
     private val getWorkspaceItems: GetWorkspaceItemsUseCase,
     private val saveNote: SaveNoteUseCase,
     private val deleteNote: DeleteNoteUseCase,
+    private val deleteAsset: DeleteAssetUseCase,
     private val uploadAsset: UploadAssetUseCase,
     private val reorderItems: ReorderItemsUseCase,
     private val resolveConflict: ResolveConflictUseCase,
@@ -71,6 +72,27 @@ class WorkspaceViewModel @Inject constructor(
         viewModelScope.launch { deleteNote.invoke(id) }
     }
 
+    /** Stage an asset for deletion — UI shows the confirmation dialog. */
+    fun requestDeleteAsset(id: String) {
+        _uiState.update { it.copy(assetPendingDelete = id) }
+    }
+
+    fun cancelDeleteAsset() {
+        _uiState.update { it.copy(assetPendingDelete = null) }
+    }
+
+    fun confirmDeleteAsset() {
+        val id = _uiState.value.assetPendingDelete ?: return
+        _uiState.update { it.copy(assetPendingDelete = null) }
+        viewModelScope.launch {
+            try {
+                deleteAsset.invoke(id)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "Failed to delete image: ${e.message}") }
+            }
+        }
+    }
+
     fun pickImage(uri: Uri) {
         viewModelScope.launch {
             try {
@@ -81,8 +103,22 @@ class WorkspaceViewModel @Inject constructor(
         }
     }
 
+    /** Toggle selection for an image tile. Tapping the same id clears it; tapping a different id switches. */
+    fun toggleAssetSelection(id: String) {
+        _uiState.update {
+            val next = if (it.selectedAssetId == id) null else id
+            it.copy(selectedAssetId = next)
+        }
+    }
+
+    fun clearAssetSelection() {
+        if (_uiState.value.selectedAssetId != null) {
+            _uiState.update { it.copy(selectedAssetId = null) }
+        }
+    }
+
     fun onDragStart(itemId: String) {
-        _uiState.update { it.copy(draggedItemId = itemId) }
+        _uiState.update { it.copy(draggedItemId = itemId, selectedAssetId = null) }
     }
 
     fun onDragEnd(itemId: String, targetIndex: Int) {
