@@ -132,7 +132,10 @@ class WorkspaceViewModel @Inject constructor(
     fun onDragEnd(itemId: String, targetIndex: Int) {
         viewModelScope.launch {
             val items = _uiState.value.items
-            val newSortOrder = computeSortOrderAt(items, targetIndex)
+            val currentIndex = items.indexOfFirst { it.id == itemId }
+            val adjustedIndex = if (currentIndex >= 0 && targetIndex > currentIndex)
+                targetIndex + 1 else targetIndex
+            val newSortOrder = computeSortOrderAt(items, adjustedIndex)
             val item = items.find { it.id == itemId } ?: return@launch
             when (item) {
                 is WorkspaceItem.NoteItem -> reorderItems.reorderNote(itemId, newSortOrder)
